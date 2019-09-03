@@ -11,6 +11,11 @@
 - `name` : Column 노출 이름
 - `index` : Column 순서
 - `group` : Column 그룹
+  - 그룹이란, Column의 동일한 항목을 묶어 노출하는 기능을 말합니다.
+
+
+
+> 기본예제
 
 ```java
 public class Inventory {
@@ -23,6 +28,32 @@ public class Inventory {
     
 }
 ```
+
+
+
+> 그룹예제
+
+- `group`의 기본값을 0이며, 숫자가 커질 수록 상위 그룹을 의미합니다.
+- `group`으로 데이터가 묶여 노출되기 때문에 의미가 다른 같은 이름의 group이 있어선 안됩니다.
+
+```java
+public class Inventory {
+    
+    @ExcelColumnt(name="CATEGORY", index=0, group=1)
+    public String category;
+    
+    @ExcelColumnt(name="NAME", index=0)
+    public String name;
+    
+    @ExcelColumn(name="COUNT", index=1)
+    public Integer count;
+    
+}
+```
+
+![1567494120892](assets/1567494120892.png)
+
+
 
 
 
