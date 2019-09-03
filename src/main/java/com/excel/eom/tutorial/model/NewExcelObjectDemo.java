@@ -2,12 +2,12 @@ package com.excel.eom.tutorial.model;
 
 import com.excel.eom.annotation.ExcelColumn;
         import com.excel.eom.annotation.ExcelObject;
-import com.excel.eom.constant.CellColor;
+import com.excel.eom.constant.ExcelColor;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@ExcelObject(name = "EOM", color = CellColor.GREEN)
+@ExcelObject(name = "EOM", color = ExcelColor.GREEN)
 @Data
 @NoArgsConstructor // * must have
 @AllArgsConstructor

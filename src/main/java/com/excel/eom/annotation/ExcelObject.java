@@ -1,6 +1,6 @@
 package com.excel.eom.annotation;
 
-import com.excel.eom.constant.CellColor;
+import com.excel.eom.constant.ExcelColor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,6 +22,6 @@ public @interface ExcelObject {
 
     String name() default "sheet";
 
-    CellColor color() default CellColor.GREEN;
+    ExcelColor color() default ExcelColor.GREEN;
 
 }

@@ -1,5 +1,5 @@
 package com.excel.eom.constant;
 
-public enum CellColor {
+public enum ExcelColor {
     RED, GREEN, BLUE
 }
