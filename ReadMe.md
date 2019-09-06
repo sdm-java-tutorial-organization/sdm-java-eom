@@ -111,5 +111,4 @@ ExcelObjectMapper.init()
 
 ## Exception
 
-- 종류
-  - 
+- 정리중

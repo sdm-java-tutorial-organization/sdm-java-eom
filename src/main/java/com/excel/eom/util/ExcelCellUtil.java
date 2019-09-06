@@ -1,8 +1,10 @@
 package com.excel.eom.util;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.xssf.usermodel.*;
 
 import java.lang.reflect.Field;
 
@@ -81,6 +83,56 @@ public class ExcelCellUtil {
                 cell.setCellValue((Double) value);
                 break;
         }
+    }
+
+    /**
+     * getCellStyle
+     *
+     * @param book
+     * */
+    public static XSSFCellStyle getCellStyle(XSSFWorkbook book) {
+        return book.createCellStyle();
+    }
+
+    /**
+     * setCellColor
+     *
+     * @param cellStyle
+     * @param color
+     * */
+    public static void setCellColor(XSSFCellStyle cellStyle, IndexedColors color) {
+        cellStyle.setFillForegroundColor(color.getIndex());
+        cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+    }
+
+    /**
+     * setCellBorder
+     *
+     * @param cellStyle
+     * @param borderStyle
+     * @param borderColor
+     * */
+    public static void setCellBorder(XSSFCellStyle cellStyle, BorderStyle borderStyle, IndexedColors borderColor) {
+        cellStyle.setBorderBottom(borderStyle);
+        cellStyle.setBottomBorderColor(borderColor.getIndex());
+        cellStyle.setBorderLeft(borderStyle);
+        cellStyle.setLeftBorderColor(borderColor.getIndex());
+        cellStyle.setBorderRight(borderStyle);
+        cellStyle.setRightBorderColor(borderColor.getIndex());
+        cellStyle.setBorderTop(borderStyle);
+        /*cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);*/
+    }
+
+
+
+    /**
+     * getCellStyle
+     *
+     * @param cell
+     * @param cellStyle
+     * */
+    public static void setCellStyle(XSSFCell cell, XSSFCellStyle cellStyle) {
+        cell.setCellStyle(cellStyle);
     }
 
 }

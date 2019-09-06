@@ -1,17 +1,23 @@
-package com.excel.eom.tutorial.model;
+package com.excel.eom.tutorial;
+
 
 import com.excel.eom.annotation.ExcelColumn;
-        import com.excel.eom.annotation.ExcelObject;
-import com.excel.eom.constant.ExcelColor;
+import com.excel.eom.annotation.ExcelObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 
-@ExcelObject(name = "EOM", color = ExcelColor.GREEN)
 @Data
 @NoArgsConstructor // * must have
 @AllArgsConstructor
-public class NewExcelObjectDemo {
+@ExcelObject(
+        name = "EOM",
+        cellColor = IndexedColors.YELLOW,
+        borderColor = IndexedColors.BLACK,
+        borderStyle = BorderStyle.THIN)
+public class ExcelObjectDemo {
 
     // TODO index 같을 경우
     // TODO name 같을 경우
@@ -29,3 +35,6 @@ public class NewExcelObjectDemo {
     public Integer weight;
 
 }
+
+
+

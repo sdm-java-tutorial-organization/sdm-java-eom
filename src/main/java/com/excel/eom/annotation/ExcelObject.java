@@ -1,6 +1,8 @@
 package com.excel.eom.annotation;
 
 import com.excel.eom.constant.ExcelColor;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,11 +19,15 @@ import java.lang.annotation.Target;
  * */
 
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface ExcelObject {
 
     String name() default "sheet";
 
-    ExcelColor color() default ExcelColor.GREEN;
+    IndexedColors cellColor() default IndexedColors.YELLOW;
+
+    BorderStyle borderStyle() default BorderStyle.THIN;
+
+    IndexedColors borderColor() default IndexedColors.BLACK;
 
 }

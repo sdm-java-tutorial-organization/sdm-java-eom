@@ -1,20 +1,18 @@
 package com.excel.eom.builder;
 
+
 import com.excel.eom.model.ColumnElement;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ColumnElementCallback;
-import com.excel.eom.util.callback.ColumnInfoCallback;
+import com.excel.eom.util.callback.ExcelColumnInfoCallback;
+import com.excel.eom.util.callback.ExcelObjectInfoCallback;
 import com.excel.eom.util.callback.RegionSettingCallback;
-import lombok.Data;
-import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -25,8 +23,10 @@ public class ExcelObjectMapper {
     private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
 
     private Class<?> clazz;
+    private XSSFWorkbook book;
     private XSSFSheet sheet;
-    private Map<Field, ColumnElement> elements;
+    private Map<Field, ColumnElement> elements = new HashMap<>();
+    private Map<Field, XSSFCellStyle> styles = new HashMap<>();
 
     private ExcelObjectMapper() {
 
@@ -38,25 +38,28 @@ public class ExcelObjectMapper {
 
     public ExcelObjectMapper initModel(Class<?> clazz) throws Throwable {
         this.clazz = clazz;
-        initElements();
+        return this;
+    }
+
+    public ExcelObjectMapper initSheet(XSSFWorkbook book, XSSFSheet sheet) {
+        this.book = book;
+        this.sheet = sheet;
         return this;
     }
 
     private void initElements() throws Throwable {
         if (this.clazz != null) {
-            this.elements = new HashMap<>();
-            ReflectionUtil.getFieldAnnoInfo(this.clazz, new ColumnInfoCallback() {
+            ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
-                public void getFieldAnnoInfo(Field field, String name, Integer index, Integer group) {
+                public void getFieldInfo(Field field, String name, Integer index, Integer group, IndexedColors cellColor, BorderStyle borderStyle, IndexedColors borderColor) {
                     elements.put(field, new ColumnElement(name, index, group));
+                    XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                    ExcelCellUtil.setCellColor(cellStyle, cellColor);
+                    ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                    styles.put(field, cellStyle);
                 }
             });
         }
-    }
-
-    public ExcelObjectMapper initSheet(XSSFSheet sheet) {
-        this.sheet = sheet;
-        return this;
     }
 
     /**
@@ -65,27 +68,21 @@ public class ExcelObjectMapper {
      * @param objects
      * */
     public <T> void buildObject(List<T> objects) throws Throwable {
-        if (this.sheet != null && this.clazz != null) {
+        if (this.book != null && this.sheet != null && this.clazz != null) {
+            initElements();
 
             // [h]eader
             XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
-            setRow(hRow);
+            setHeaderRow(hRow);
 
             // [b]ody
             for (int i = 0; i < objects.size(); i++) {
                 T object = objects.get(i);
                 XSSFRow bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
-                ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
-                    @Override
-                    public void getElement(Field field, ColumnElement element) throws Throwable {
-                        XSSFCell cell = ExcelCellUtil.getCell(bRow, element.getIndex());
-                        Object cellValue = field.get(object);
-                        ExcelCellUtil.setCellValue(cell, cellValue, field);
-                    }
-                });
+                setBodyRow(bRow, object);
             }
 
-            // region
+            // [r]egion
             Map<Field, ColumnElement> groupElements = this.elements.entrySet().stream()
                     .filter(element -> element.getValue().getGroup() > 0)
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -141,6 +138,40 @@ public class ExcelObjectMapper {
         }
     }
 
+    private void setHeaderRow(final XSSFRow row) throws Throwable {
+        final XSSFWorkbook book = this.book;
+        final Map<Field, ColumnElement> elements = this.elements;
+        ReflectionUtil.getClassInfo(this.clazz, new ExcelObjectInfoCallback() {
+            @Override
+            public void getClassInfo(String name, IndexedColors cellColor, BorderStyle borderStyle, IndexedColors borderColor) throws Throwable {
+                XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                ExcelCellUtil.setCellColor(cellStyle, cellColor);
+                ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
+                    @Override
+                    public void getElement(Field field, ColumnElement element) throws Throwable {
+                        XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
+                        ExcelCellUtil.setCellValue(cell, element.getName());
+                        ExcelCellUtil.setCellStyle(cell, cellStyle);
+                    }
+                });
+            }
+        });
+    }
+
+    private <T> void setBodyRow(XSSFRow row, T object) throws Throwable {
+        ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
+            @Override
+            public void getElement(Field field, ColumnElement element) throws Throwable {
+                XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
+                Object cellValue = field.get(object);
+                XSSFCellStyle style = styles.get(field);
+                ExcelCellUtil.setCellValue(cell, cellValue, field);
+                ExcelCellUtil.setCellStyle(cell, style);
+            }
+        });
+    }
+
     /**
      * buildSheet (sheet -> object)
      *
@@ -148,12 +179,15 @@ public class ExcelObjectMapper {
     public <T> List<T> buildSheet() throws Throwable {
         List<T> items = new ArrayList<>();
 
-        if (this.sheet != null && this.clazz != null) {
+        if (this.book != null && this.sheet != null && this.clazz != null) {
+            initElements();
+
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
 
             // [h]eader
-            XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
-            setRow(hRow);
+            // TODO only validation
+            /*XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
+            setHeaderRow(hRow);*/
 
             // [b]ody
             Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
@@ -167,16 +201,6 @@ public class ExcelObjectMapper {
             }
         }
         return items;
-    }
-
-    private void setRow(final XSSFRow row) throws Throwable {
-        ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
-            @Override
-            public void getElement(Field field, ColumnElement element) throws Throwable {
-                XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
-                ExcelCellUtil.setCellValue(cell, element.getName());
-            }
-        });
     }
 
     private Object getObjectByRow(XSSFRow row,
