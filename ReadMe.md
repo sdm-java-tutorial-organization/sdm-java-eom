@@ -13,7 +13,9 @@
 - `group` : Column 그룹
   - 그룹이란, Column의 동일한 항목을 묶어 노출하는 기능을 말합니다.
 
-
+- `cellColor` : Cell 색상 (default : IndexedColors.WHITE)
+- `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
+- `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
 
 > 기본예제
 
@@ -64,10 +66,12 @@ public class Inventory {
 필수적이지 않으며 설정하지 않을 경우 기본값으로 설정됩니다.
 
 - `name` : 시트의 이름을 설정합니다. (default : "default")
-- `color` : 시트의 색상을 설정합니다. (default : ExcelColor.YELLOW)
+- `cellColor` : Cell 색상 (default : IndexedColors.YELLOW)
+- `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
+- `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
 
 ```java
-@Excelobject(name="default", color=ExcelColor.YELLOW)
+@Excelobject(name="default")
 public class Inventory {
     
 }
@@ -99,10 +103,13 @@ List<Inventory> items = ExcelObjectMapper.init()
 
 
 > buildObject (Object -> Excel)
+>
+> - initBook이 추가적으로 필요합니다. ( CellStyle 작업을 위함 )
 
 ```java
 ExcelObjectMapper.init()
     .initModel(Inventory.class)
+    .initBook(book)
     .initSheet(sheet)
     .buildObject(items)
 ```

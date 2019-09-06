@@ -7,6 +7,7 @@ import com.excel.eom.util.callback.ColumnElementCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.ExcelObjectInfoCallback;
 import com.excel.eom.util.callback.RegionSettingCallback;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -41,9 +42,13 @@ public class ExcelObjectMapper {
         return this;
     }
 
-    public ExcelObjectMapper initSheet(XSSFWorkbook book, XSSFSheet sheet) {
-        this.book = book;
+    public ExcelObjectMapper initSheet(XSSFSheet sheet) {
         this.sheet = sheet;
+        return this;
+    }
+
+    public ExcelObjectMapper initBook(XSSFWorkbook book) {
+        this.book = book;
         return this;
     }
 
@@ -53,10 +58,12 @@ public class ExcelObjectMapper {
                 @Override
                 public void getFieldInfo(Field field, String name, Integer index, Integer group, IndexedColors cellColor, BorderStyle borderStyle, IndexedColors borderColor) {
                     elements.put(field, new ColumnElement(name, index, group));
-                    XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
-                    ExcelCellUtil.setCellColor(cellStyle, cellColor);
-                    ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
-                    styles.put(field, cellStyle);
+                    if(book != null) {
+                        XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                        ExcelCellUtil.setCellColor(cellStyle, cellColor);
+                        ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                        styles.put(field, cellStyle);
+                    }
                 }
             });
         }
@@ -179,7 +186,7 @@ public class ExcelObjectMapper {
     public <T> List<T> buildSheet() throws Throwable {
         List<T> items = new ArrayList<>();
 
-        if (this.book != null && this.sheet != null && this.clazz != null) {
+        if (this.sheet != null && this.clazz != null) {
             initElements();
 
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);

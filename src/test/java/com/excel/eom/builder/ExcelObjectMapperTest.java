@@ -39,7 +39,8 @@ public class ExcelObjectMapperTest {
         XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectDemo.class)
-                .initSheet(book, sheet)
+                .initBook(book)
+                .initSheet(sheet)
                 .buildObject(items);
 
         // print-sheet TODO value 확인안됨 -> region 확인
@@ -69,7 +70,8 @@ public class ExcelObjectMapperTest {
         // print-sheet
         List<ExcelObjectDemo> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectDemo.class)
-                .initSheet(book, sheet)
+                .initBook(book)
+                .initSheet(sheet)
                 .buildSheet();
 
         // print-object
@@ -88,7 +90,8 @@ public class ExcelObjectMapperTest {
 
         List<ExcelObjectDemo> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectDemo.class)
-                .initSheet(book, sheet)
+                .initBook(book)
+                .initSheet(sheet)
                 .buildSheet();
 
         // print-object
