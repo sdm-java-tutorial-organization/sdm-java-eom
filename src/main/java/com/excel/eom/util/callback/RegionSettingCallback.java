@@ -4,6 +4,6 @@ import java.lang.reflect.Field;
 
 public interface RegionSettingCallback {
 
-    void setRegionInfo(Field field, Object instance, Object value) throws Throwable;
+    void setRegionInfo(Field field, Object instance, Object value);
 
 }

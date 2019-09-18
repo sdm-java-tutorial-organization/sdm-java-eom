@@ -72,16 +72,22 @@ public class ExcelCellUtil {
      * @param field
      * */
     public static void setCellValue(XSSFCell cell, Object value, Field field) {
-        switch (field.getType().getSimpleName()) {
-            case "String":
-                cell.setCellValue((String) value);
-                break;
-            case "Integer":
-                cell.setCellValue((Integer) value);
-                break;
-            case "Double":
-                cell.setCellValue((Double) value);
-                break;
+        if(field.getType().isEnum()) {
+            // Enum
+            cell.setCellValue(value.toString());
+        } else {
+            // Class
+            switch (field.getType().getSimpleName()) {
+                case "String":
+                    cell.setCellValue((String) value);
+                    break;
+                case "Integer":
+                    cell.setCellValue((Integer) value);
+                    break;
+                case "Double":
+                    cell.setCellValue((Double) value);
+                    break;
+            }
         }
     }
 

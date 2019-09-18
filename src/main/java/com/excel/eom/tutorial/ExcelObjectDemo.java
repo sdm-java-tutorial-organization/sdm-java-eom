@@ -25,14 +25,20 @@ public class ExcelObjectDemo {
     @ExcelColumn(name = "GROUP", group = 1, index = 0)
     public String group;
 
-    @ExcelColumn(name = "NAME", group = 0, index = 1)
+    @ExcelColumn(name = "PLANET2", group = 1, index = 1)
+    public Planet plane2;
+
+    @ExcelColumn(name = "NAME", group = 0, index = 2)
     public String name;
 
-    @ExcelColumn(name = "HEIGHT", group = 0, index = 2)
+    @ExcelColumn(name = "HEIGHT", group = 0, index = 3)
     public Integer height;
 
-    @ExcelColumn(name = "WEIGHT", group = 0, index = 3)
+    @ExcelColumn(name = "WEIGHT", group = 0, index = 4)
     public Integer weight;
+
+    @ExcelColumn(name = "PLANET", group = 0, index = 5)
+    public Planet planet;
 
 }
 

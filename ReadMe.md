@@ -33,7 +33,36 @@ public class Inventory {
 
 
 
-> 그룹예제
+### Enum
+
+- 자료형에 `Enum`을 사용할 경우 엑셀에서 `Dropdown`으로 구성됩니다. 
+
+```java
+public enum Planet {
+    Earth,
+    Asgard,
+    Titan
+}
+
+public class Inventory {
+
+    @ExcelColumnt(name="NAME", index=0)
+    public String name;
+    
+    @ExcelColumn(name="COUNT", index=1)
+    public Integer count;
+
+    @ExcelColumn(name = "PLANET", index = 2)
+    public Planet planet;
+
+}
+```
+
+![1568787292518](assets/1568787292518.png)
+
+### Group
+
+> 그룹예제 A
 
 - `group`의 기본값을 0이며, 숫자가 커질 수록 상위 그룹을 의미합니다.
 - `group`으로 데이터가 묶여 노출되기 때문에 의미가 다른 같은 이름의 group이 있어선 안됩니다.
@@ -44,10 +73,10 @@ public class Inventory {
     @ExcelColumnt(name="CATEGORY", index=0, group=1)
     public String category;
     
-    @ExcelColumnt(name="NAME", index=0)
+    @ExcelColumnt(name="NAME", index=1)
     public String name;
     
-    @ExcelColumn(name="COUNT", index=1)
+    @ExcelColumn(name="COUNT", index=2)
     public Integer count;
     
 }
@@ -55,7 +84,63 @@ public class Inventory {
 
 ![1567494120892](assets/1567494120892.png)
 
+> 그룹예제 B
 
+- 같은 Group이 2개 이상일 경우
+  - `index`가 높은 필드에 따라 그룹 범위가 정해지며, `index`가 낮은 필드는 이미 정해진 그룹 범위를 따라 갑니다.
+
+```java
+public class Inventory {
+    
+    @ExcelColumnt(name="CATEGORY", index=0, group=1)
+    public String category;
+    
+    @ExcelColumn(name = "CAT_NAME", index=1, group=1)
+    public String catName;
+    
+    @ExcelColumnt(name="NAME", index=2)
+    public String name;
+    
+    @ExcelColumn(name="COUNT", index=3)
+    public Integer count;
+
+}
+```
+
+![1568793610927](assets/1568793610927.png)
+
+사진을 보면 `CAT_NAME`열은 같은 열간에 같은 항목을 가지지만 `CAT` 열의 영향을 받아서 범위가 정해집니다.
+
+
+
+> 그룹예제 C
+
+- 다른 Group이 3개 이상일 경우
+
+```java
+public class Inventory {
+
+    @ExcelColumn(name = "CATEGORY", group = 2, index = 0)
+    public String category;
+
+    @ExcelColumn(name = "CAT_NAME", group = 2, index = 1)
+    public String catName;
+
+    @ExcelColumn(name = "SUBJECT", group = 1, index = 2)
+    public String subject;
+
+    @ExcelColumn(name = "NAME", index = 3)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 4)
+    public Integer count;
+
+}
+```
+
+![1568796670373](assets/1568796670373.png)
+
+사진을 보면 `SUBJECT`열은 3행과 4행이 "subjectA"라는 값으로 연결되지만 앞선 그룹에 의해서 분리됩니다.
 
 
 
@@ -66,13 +151,20 @@ public class Inventory {
 필수적이지 않으며 설정하지 않을 경우 기본값으로 설정됩니다.
 
 - `name` : 시트의 이름을 설정합니다. (default : "default")
+- `uniqueKeys` : 유니크항목을 지정하는 메타데이터
 - `cellColor` : Cell 색상 (default : IndexedColors.YELLOW)
 - `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
 - `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
 
 ```java
-@Excelobject(name="default")
+@Excelobject(name="default", uniqueKeys={"name"})
 public class Inventory {
+    
+    @ExcelColumnt(name="NAME", index=0)
+    public String name;
+    
+    @ExcelColumn(name="COUNT", index=1)
+    public Integer count;
     
 }
 ```
@@ -118,4 +210,5 @@ ExcelObjectMapper.init()
 
 ## Exception
 
-- 정리중
+- Exception 통합하여 가이드를 제공할 예정입니다.
+- Exception 방식은 문제가 발생했을 때 반환하는 것이 아니라 모든 이슈를 확인하고 반환하는 식으로 구성될 예정입니다.

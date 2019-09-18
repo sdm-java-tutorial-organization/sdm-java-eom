@@ -17,12 +17,14 @@ import java.lang.annotation.Target;
  *
  *
  * */
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExcelObject {
 
     String name() default "sheet";
+
+    // TODO compile error
+    String[] uniqueKeys() default "";
 
     IndexedColors cellColor() default IndexedColors.YELLOW;
 

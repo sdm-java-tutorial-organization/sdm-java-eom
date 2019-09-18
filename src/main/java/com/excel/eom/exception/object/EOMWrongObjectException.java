@@ -10,15 +10,15 @@ import lombok.Data;
  * - IllegalAccessException (접근범위)
  * */
 @Data
-public class EOMNoObjectException extends EOMRuntimeException {
+public class EOMWrongObjectException extends EOMRuntimeException {
 
     public String className;
 
-    public EOMNoObjectException() {
+    public EOMWrongObjectException() {
         super();
     }
 
-    public EOMNoObjectException(Throwable e, String className) {
+    public EOMWrongObjectException(Throwable e, String className) {
         super(e);
         this.className = className;
     }

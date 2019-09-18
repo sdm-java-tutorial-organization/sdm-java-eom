@@ -1,11 +1,11 @@
 package com.excel.eom.util;
 
-import com.excel.eom.builder.ExcelObjectMapper;
+
+import org.apache.poi.hssf.usermodel.DVConstraint;
+import org.apache.poi.hssf.usermodel.HSSFDataValidation;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.XSSFCell;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,18 +111,18 @@ public class ExcelSheetUtil {
      * @param colIdx
      */
     public static CellRangeAddress getMergedRegion(XSSFSheet sheet,
-                                                 int rowIdx,
-                                                 int colIdx) {
+                                                   int rowIdx,
+                                                   int colIdx) {
         for (int i = 0; i < sheet.getNumMergedRegions(); ++i) {
             CellRangeAddress range = sheet.getMergedRegion(i);
             if (
                     rowIdx >= range.getFirstRow()
-                    &&
-                    rowIdx <= range.getLastRow()
-                    &&
-                    colIdx >= range.getFirstColumn()
-                    &&
-                    colIdx <= range.getLastColumn()
+                            &&
+                            rowIdx <= range.getLastRow()
+                            &&
+                            colIdx >= range.getFirstColumn()
+                            &&
+                            colIdx <= range.getLastColumn()
             ) {
                 return range;
             }
@@ -146,6 +146,28 @@ public class ExcelSheetUtil {
                                  int lastColumn) {
         CellRangeAddress area = new CellRangeAddress(firstRow, lastRow, firstColumn, lastColumn);
         sheet.addMergedRegion(area);
+    }
+
+    public static CellRangeAddressList getRegion(int firstRow,
+                                                 int lastRow,
+                                                 int firstColumn,
+                                                 int lastColumn) {
+        return new CellRangeAddressList(firstRow, lastRow, firstColumn, lastColumn);
+    }
+
+    public static XSSFDataValidationConstraint getDropdown(XSSFDataValidationHelper dvHelper,
+                                                           String[] items) {
+        return (XSSFDataValidationConstraint) dvHelper.createExplicitListConstraint(items);
+    }
+
+    public static void setDropdown(XSSFSheet sheet,
+                                   XSSFDataValidationHelper dvHelper,
+                                   XSSFDataValidationConstraint dropdown,
+                                   CellRangeAddressList regions) {
+        XSSFDataValidation inputDataValidation = (XSSFDataValidation) dvHelper.createValidation(dropdown, regions);
+        inputDataValidation.setShowErrorBox(true);
+        inputDataValidation.setSuppressDropDownArrow(true);
+        sheet.addValidationData(inputDataValidation);
     }
 
 }

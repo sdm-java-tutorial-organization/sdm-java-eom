@@ -9,6 +9,6 @@ public interface ExcelObjectInfoCallback {
     void getClassInfo(String name,
                       IndexedColors cellColor,
                       BorderStyle borderStyle,
-                      IndexedColors borderColor) throws Throwable;
+                      IndexedColors borderColor);
 
 }

@@ -7,12 +7,19 @@ import com.excel.eom.util.callback.ExcelObjectInfoCallback;
 
 import static com.excel.eom.util.CollectionUtil.isEmpty;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 public class ReflectionUtil {
 
-    public static void getClassInfo(Class<?> clazz, ExcelObjectInfoCallback callback) throws Throwable {
+    public static Object getFieldValue(Field field, Object object) {
+        try {
+            return field.get(object);
+        } catch (IllegalAccessException e) {
+            return null;
+        }
+    }
+
+    public static void getClassInfo(Class<?> clazz, ExcelObjectInfoCallback callback) {
         if (clazz.isAnnotationPresent(ExcelObject.class)) {
             callback.getClassInfo(
                     clazz.getAnnotation(ExcelObject.class).name(),
@@ -23,7 +30,7 @@ public class ReflectionUtil {
         }
     }
 
-    public static void getFieldInfo(Class<?> clazz, ExcelColumnInfoCallback callback) throws Throwable {
+    public static void getFieldInfo(Class<?> clazz, ExcelColumnInfoCallback callback) {
         Field[] fields = clazz.getDeclaredFields();
         if (!isEmpty(fields)) {
             for (Field field : fields) {

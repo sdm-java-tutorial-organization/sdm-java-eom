@@ -6,7 +6,6 @@ import java.lang.reflect.Field;
 
 public interface ColumnElementCallback {
 
-    void getElement (Field field,
-                    ColumnElement element) throws Throwable;
+    void getElement (Field field, ColumnElement element);
 
 }
