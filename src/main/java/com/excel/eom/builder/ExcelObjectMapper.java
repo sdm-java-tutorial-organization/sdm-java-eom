@@ -13,6 +13,7 @@ import com.sun.xml.internal.bind.v2.TODO;
 import org.apache.poi.hssf.usermodel.DVConstraint;
 import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -84,14 +85,40 @@ public class ExcelObjectMapper {
                 public void getFieldInfo(Field field,
                                          String name,
                                          Integer index,
+                                         Integer width,
+                                         Short alignment,
                                          Integer group,
                                          IndexedColors cellColor,
                                          BorderStyle borderStyle,
                                          IndexedColors borderColor) {
                     elements.put(field, new ColumnElement(name, index, group));
+                }
+            });
+        }
+    }
+
+    /**
+     * presetSheet ( object -> sheet )
+     *
+     * */
+    private void presetSheet() {
+        if(this.clazz != null && this.sheet != null) {
+            ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
+                @Override
+                public void getFieldInfo(Field field,
+                                         String name,
+                                         Integer index,
+                                         Integer width,
+                                         Short alignment,
+                                         Integer group,
+                                         IndexedColors cellColor,
+                                         BorderStyle borderStyle,
+                                         IndexedColors borderColor) {
+                    // init width (sheet)
+                    sheet.setColumnWidth(index, width * 100 * 3);
 
                     // init dropdown (sheet)
-                    if(field.getType().isEnum() && sheet != null) {
+                    if(field.getType().isEnum()) {
                         if(dvHelper == null) {
                             dvHelper = new XSSFDataValidationHelper(sheet);
                         }
@@ -110,6 +137,7 @@ public class ExcelObjectMapper {
                         XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
                         ExcelCellUtil.setCellColor(cellStyle, cellColor);
                         ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                        ExcelCellUtil.setAlignment(cellStyle, alignment);
                         styles.put(field, cellStyle);
                     }
                 }
@@ -125,6 +153,7 @@ public class ExcelObjectMapper {
     public <T> void buildObject(List<T> objects) {
         if (this.book != null && this.sheet != null && this.clazz != null) {
             initElements();
+            presetSheet();
 
             // [h]eader
             XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
@@ -155,8 +184,18 @@ public class ExcelObjectMapper {
             @Override
             public void getClassInfo(String name, IndexedColors cellColor, BorderStyle borderStyle, IndexedColors borderColor) {
                 XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                XSSFFont font = ExcelCellUtil.getFont(book);
+                font.setBold(true);
+
+                // static
+                ExcelSheetUtil.createFreezePane(sheet, 1);
+                ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
+                ExcelCellUtil.setFont(cellStyle, font);
+
+                // dynamic
                 ExcelCellUtil.setCellColor(cellStyle, cellColor);
                 ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+
                 ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
                     @Override
                     public void getElement(Field field, ColumnElement element) {
@@ -301,7 +340,7 @@ public class ExcelObjectMapper {
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
 
             // [h]eader
-            XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
+            XSSFRow hRow = ExcelRowUtil.getRow(this.sheet, 0);
             checkHeader(hRow);
 
             // [b]ody

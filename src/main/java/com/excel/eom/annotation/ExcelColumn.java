@@ -1,6 +1,7 @@
 package com.excel.eom.annotation;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 
 import java.lang.annotation.ElementType;
@@ -25,6 +26,10 @@ public @interface ExcelColumn {
     String name() default "";
 
     int index() default 0;
+
+    int width() default 15;
+
+    short alignment() default CellStyle.ALIGN_CENTER;
 
     int group() default 0;
 

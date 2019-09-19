@@ -101,6 +101,16 @@ public class ExcelCellUtil {
     }
 
     /**
+     * getCellStyle
+     *
+     * @param cell
+     * @param cellStyle
+     * */
+    public static void setCellStyle(XSSFCell cell, XSSFCellStyle cellStyle) {
+        cell.setCellStyle(cellStyle);
+    }
+
+    /**
      * setCellColor
      *
      * @param cellStyle
@@ -109,6 +119,16 @@ public class ExcelCellUtil {
     public static void setCellColor(XSSFCellStyle cellStyle, IndexedColors color) {
         cellStyle.setFillForegroundColor(color.getIndex());
         cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
+    }
+
+    /**
+     * setCellColor
+     *
+     * @param cellStyle
+     * @param alignment
+     * */
+    public static void setAlignment(XSSFCellStyle cellStyle, short alignment) {
+        cellStyle.setAlignment(alignment);
     }
 
     /**
@@ -129,16 +149,23 @@ public class ExcelCellUtil {
         /*cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);*/
     }
 
-
+    /**
+     * getFont
+     *
+     * @param book
+     * */
+    public static XSSFFont getFont(XSSFWorkbook book) {
+        return book.createFont();
+    }
 
     /**
-     * getCellStyle
+     * setFont
      *
-     * @param cell
-     * @param cellStyle
+     * @param style
+     * @param font
      * */
-    public static void setCellStyle(XSSFCell cell, XSSFCellStyle cellStyle) {
-        cell.setCellStyle(cellStyle);
+    public static void setFont(XSSFCellStyle style, XSSFFont font) {
+        style.setFont(font);
     }
 
 }

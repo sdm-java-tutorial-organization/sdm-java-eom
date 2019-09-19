@@ -18,6 +18,30 @@ public class ExcelSheetUtil {
     private static final Logger logger = LoggerFactory.getLogger(ExcelSheetUtil.class);
 
     /**
+     * print
+     *
+     * @param sheet
+     */
+    public static void print(XSSFSheet sheet) {
+        int rowCount = sheet.getPhysicalNumberOfRows();
+        int columnCount = sheet.getRow(0).getPhysicalNumberOfCells();
+        for (int i = 0; i < rowCount; i++) {
+            XSSFRow row = sheet.getRow(i);
+            List<Object> rowStorage = new ArrayList<>();
+            for (int j = 0; j < columnCount; j++) {
+                XSSFCell cell = row.getCell(j);
+                if (cell != null) {
+                    Object value = ExcelCellUtil.getCellValue(cell);
+                    rowStorage.add(value);
+                } else {
+                    rowStorage.add(null);
+                }
+            }
+            System.out.println(Arrays.asList(rowStorage.toArray()));
+        }
+    }
+
+    /**
      * initSheet
      *
      * @param book
@@ -77,30 +101,6 @@ public class ExcelSheetUtil {
             }
         }
         return rowCount;
-    }
-
-    /**
-     * print
-     *
-     * @param sheet
-     */
-    public static void print(XSSFSheet sheet) {
-        int rowCount = sheet.getPhysicalNumberOfRows();
-        int columnCount = sheet.getRow(0).getPhysicalNumberOfCells();
-        for (int i = 0; i < rowCount; i++) {
-            XSSFRow row = sheet.getRow(i);
-            List<Object> rowStorage = new ArrayList<>();
-            for (int j = 0; j < columnCount; j++) {
-                XSSFCell cell = row.getCell(j);
-                if (cell != null) {
-                    Object value = ExcelCellUtil.getCellValue(cell);
-                    rowStorage.add(value);
-                } else {
-                    rowStorage.add(null);
-                }
-            }
-            System.out.println(Arrays.asList(rowStorage.toArray()));
-        }
     }
 
     /**
@@ -168,6 +168,10 @@ public class ExcelSheetUtil {
         inputDataValidation.setShowErrorBox(true);
         inputDataValidation.setSuppressDropDownArrow(true);
         sheet.addValidationData(inputDataValidation);
+    }
+
+    public static void createFreezePane(XSSFSheet sheet, int length) {
+        sheet.createFreezePane(0, length);
     }
 
 }

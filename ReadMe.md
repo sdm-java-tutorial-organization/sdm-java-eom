@@ -65,7 +65,7 @@ public class Inventory {
 > 그룹예제 A
 
 - `group`의 기본값을 0이며, 숫자가 커질 수록 상위 그룹을 의미합니다.
-- `group`으로 데이터가 묶여 노출되기 때문에 의미가 다른 같은 이름의 group이 있어선 안됩니다.
+- `group`으로 데이터가 묶여 노출되기 때문에 같은 이름이 있어선 안됩니다.
 
 ```java
 public class Inventory {
@@ -91,43 +91,12 @@ public class Inventory {
 
 ```java
 public class Inventory {
-    
-    @ExcelColumnt(name="CATEGORY", index=0, group=1)
-    public String category;
-    
-    @ExcelColumn(name = "CAT_NAME", index=1, group=1)
-    public String catName;
-    
-    @ExcelColumnt(name="NAME", index=2)
-    public String name;
-    
-    @ExcelColumn(name="COUNT", index=3)
-    public Integer count;
 
-}
-```
+    @ExcelColumn(name = "PARENT", group = 2, index = 0)
+    public String parentGroup;
 
-![1568793610927](assets/1568793610927.png)
-
-사진을 보면 `CAT_NAME`열은 같은 열간에 같은 항목을 가지지만 `CAT` 열의 영향을 받아서 범위가 정해집니다.
-
-
-
-> 그룹예제 C
-
-- 다른 Group이 3개 이상일 경우
-
-```java
-public class Inventory {
-
-    @ExcelColumn(name = "CATEGORY", group = 2, index = 0)
-    public String category;
-
-    @ExcelColumn(name = "CAT_NAME", group = 2, index = 1)
-    public String catName;
-
-    @ExcelColumn(name = "SUBJECT", group = 1, index = 2)
-    public String subject;
+    @ExcelColumn(name = "PARENT_NAME", group = 2, index = 1)
+    public String parentGroupName;
 
     @ExcelColumn(name = "NAME", index = 3)
     public String name;
@@ -138,9 +107,40 @@ public class Inventory {
 }
 ```
 
-![1568796670373](assets/1568796670373.png)
+![1568796995695](assets/1568796995695.png)
 
-사진을 보면 `SUBJECT`열은 3행과 4행이 "subjectA"라는 값으로 연결되지만 앞선 그룹에 의해서 분리됩니다.
+사진을 보면 `PARENT_NAME`열은 열간에 "GroupA"라는 같은 항목을 가지지만 `PARENT` 열의 영향을 받아서 범위가 정해집니다.
+
+
+
+> 그룹예제 C
+
+- 다른 Group이 3개 이상일 경우
+
+```java
+public class Inventory {
+
+    @ExcelColumn(name = "PARENT", group = 2, index = 0, cellColor = IndexedColors.GREY_50_PERCENT)
+    public String parentGroup;
+
+    @ExcelColumn(name = "PARENT_NAME", group = 2, index = 1, cellColor = IndexedColors.GREY_50_PERCENT)
+    public String parentGroupName;
+
+    @ExcelColumn(name = "CHILD", group = 1, index = 2, cellColor = IndexedColors.GREY_25_PERCENT)
+    public String childGroup;
+
+    @ExcelColumn(name = "NAME", index = 3)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 4)
+    public Integer count;
+
+}
+```
+
+![1568797324443](assets/1568797324443.png)
+
+사진을 보면 `CHILD`열은 4행과 5행이 "B`"라는 값으로 연결되지만 앞선 그룹에 의해서 분리됩니다.
 
 
 

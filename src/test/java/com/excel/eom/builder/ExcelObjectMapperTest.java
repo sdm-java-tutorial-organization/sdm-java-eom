@@ -124,13 +124,13 @@ public class ExcelObjectMapperTest {
             borderStyle = BorderStyle.THIN)
     public static class ExcelObjectThreeDepth {
 
-        @ExcelColumn(name = "PARENT", group = 2, index = 0)
+        @ExcelColumn(name = "PARENT", group = 2, index = 0, cellColor = IndexedColors.GREY_50_PERCENT)
         public String parentGroup;
 
-        @ExcelColumn(name = "PARENT_NAME", group = 2, index = 1)
+        @ExcelColumn(name = "PARENT_NAME", group = 2, index = 1, cellColor = IndexedColors.GREY_50_PERCENT)
         public String parentGroupName;
 
-        @ExcelColumn(name = "CHILD", group = 1, index = 2)
+        @ExcelColumn(name = "CHILD", group = 1, index = 2, cellColor = IndexedColors.GREY_25_PERCENT)
         public String childGroup;
 
         @ExcelColumn(name = "NAME", index = 3)
