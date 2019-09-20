@@ -34,9 +34,11 @@ public class ColumnElementUtil {
      * enum extract
      *
      * */
-    public static Map<Field, ColumnElement> extractElementByEnum(Map<Field, ColumnElement> originElementMap) {
+    public static Map<Field, ColumnElement> extractElementByDropdown(Map<Field, ColumnElement> originElementMap) {
         return originElementMap.entrySet().stream()
-                .filter(element -> element.getKey().getType().isEnum())
+                .filter(element -> element.getKey().getType().isEnum()
+                        ||
+                        element.getValue().getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

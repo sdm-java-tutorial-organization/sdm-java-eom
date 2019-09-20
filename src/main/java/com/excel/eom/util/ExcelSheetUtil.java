@@ -81,7 +81,8 @@ public class ExcelSheetUtil {
      */
     public static int getSheetHeight(XSSFSheet sheet) {
         int rowCount = sheet.getPhysicalNumberOfRows();
-        for (int i = 0; i < rowCount; i++) {
+        return rowCount;
+        /*for (int i = 0; i < rowCount; i++) {
             XSSFRow row = ExcelRowUtil.getRow(sheet, i);
             if (row != null) {
                 XSSFCell cell = ExcelCellUtil.getCell(row, 0);
@@ -100,7 +101,7 @@ public class ExcelSheetUtil {
                 return i;
             }
         }
-        return rowCount;
+        return rowCount;*/
     }
 
     /**

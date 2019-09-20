@@ -47,6 +47,30 @@ public class ExcelRowUtil {
     }
 
     /**
+     * checkRowEmpty
+     *
+     * @param row
+     * */
+    public static boolean isEmptyRow(XSSFRow row) {
+        boolean isEmpty = true;
+        for(int i=0; i<row.getPhysicalNumberOfCells(); i++) {
+            XSSFCell cell = ExcelCellUtil.getCell(row, i);
+            if(cell == null) {
+                continue;
+            } else {
+                Object cellValue = ExcelCellUtil.getCellValue(cell);
+                if(cellValue == null || cellValue.equals("")) {
+                    continue;
+                } else {
+                    isEmpty = false;
+                    break;
+                }
+            }
+        }
+        return isEmpty;
+    }
+
+    /**
      * getRowNum
      *
      * @param row

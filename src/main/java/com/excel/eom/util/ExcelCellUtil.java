@@ -74,7 +74,8 @@ public class ExcelCellUtil {
     public static void setCellValue(XSSFCell cell, Object value, Field field) {
         if(field.getType().isEnum()) {
             // Enum
-            cell.setCellValue(value.toString());
+            value = value != null ? value.toString() : value;
+            cell.setCellValue((String) value);
         } else {
             // Class
             switch (field.getType().getSimpleName()) {

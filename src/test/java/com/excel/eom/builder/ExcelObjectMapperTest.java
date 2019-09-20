@@ -2,10 +2,15 @@ package com.excel.eom.builder;
 
 import com.excel.eom.annotation.ExcelColumn;
 import com.excel.eom.annotation.ExcelObject;
+import com.excel.eom.exception.EOMBodyException;
+import com.excel.eom.exception.EOMHeaderException;
+import com.excel.eom.exception.EOMRuntimeException;
+import com.excel.eom.exception.body.EOMCellException;
+import com.excel.eom.model.Dropdown;
 import com.excel.eom.tutorial.ExcelObjectDemo;
 import com.excel.eom.tutorial.Planet;
 import com.excel.eom.util.ExcelFileUtil;
-import com.excel.eom.util.ExcelRegionUtil;
+import com.excel.eom.util.ExcelSheetUtil;
 import com.excel.eom.util.ExcelSheetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,49 +19,369 @@ import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING) // 사전식순서 (a_, b_, c_, ...)
 public class ExcelObjectMapperTest {
 
-    File file = new File("src/main/resources/sample/sample_multiple.xlsx");
-    File fileGroup = new File("src/main/resources/sample/sample_multiple.xlsx");
+    static XSSFWorkbook book;
+    static XSSFWorkbook bookNullable;
+    static XSSFWorkbook bookDropdown;
+    static XSSFWorkbook bookDropdownNotContain;
+    static XSSFWorkbook bookDynamicDropdown;
+    static XSSFWorkbook bookGroupA;
+    static XSSFWorkbook bookGroupB;
 
     @Test
-    public void buildObjectWithDropdown() throws Throwable {
-        List<ExcelObjectDemo> items = Arrays.asList(
-                new ExcelObjectDemo("marvel", Planet.Earth, "nameA", 1, 101, Planet.Earth),
-                new ExcelObjectDemo("marvel", Planet.Earth, "nameB", 2, 102, Planet.Earth),
-                new ExcelObjectDemo("marvel", Planet.Earth, "nameC", 3, 103, Planet.Asgard),
-                new ExcelObjectDemo("sony", Planet.Earth, "nameD", 4, 104, Planet.Earth),
-                new ExcelObjectDemo("sony", Planet.Earth, "nameE", 5, 105, Planet.Earth),
-                new ExcelObjectDemo("sony", Planet.Earth, "nameF", 6, 106, Planet.Earth),
-                new ExcelObjectDemo("sony", Planet.Earth, "nameG", 7, 107, Planet.Earth),
-                new ExcelObjectDemo("desney", Planet.Earth, "nameH", 8, 108, Planet.Titan),
-                new ExcelObjectDemo("desney", Planet.Earth, "nameI", 9, 109, Planet.Earth),
-                new ExcelObjectDemo("desney", Planet.Earth, "nameJ", 10, 110, Planet.Earth),
-                new ExcelObjectDemo("desney", Planet.Earth, "nameK", 11, 111, Planet.Earth)
+    public void a_buildObject() throws Throwable {
+        List<ExcelObjectBasic> items = Arrays.asList(
+                new ExcelObjectBasic("nameA", 1),
+                new ExcelObjectBasic("nameB", 2),
+                new ExcelObjectBasic("nameC", 3)
+        );
+        book = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectBasic.class)
+                .initBook(book)
+                .initSheet(sheet)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_basic.xlsx");
+    }
+
+    @Test
+    public void b_buildSheet() throws Throwable {
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(book, 0);
+        List<ExcelObjectBasic> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectBasic.class)
+                .initBook(book)
+                .initSheet(sheet)
+                .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+    }
+
+    @Test
+    public void a_buildObjectThrowNullable() throws Throwable {
+        List<ExcelObjectBasic> items = Arrays.asList(
+                new ExcelObjectBasic("nameA", 1),
+                new ExcelObjectBasic("nameB", 2),
+                new ExcelObjectBasic("", 3),
+                new ExcelObjectBasic(null, 4),
+                new ExcelObjectBasic("nameE", 5)
+        );
+        bookNullable = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookNullable, "sheet");
+        try {
+            ExcelObjectMapper.init()
+                    .initModel(ExcelObjectBasic.class)
+                    .initBook(bookNullable)
+                    .initSheet(sheet)
+                    .buildObject(items);
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+        }
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookNullable, "src/main/resources/deploy/deploy_nullable.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetThrowNullable() throws Throwable {
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookNullable, 0);
+        List<ExcelObjectBasic> items = null;
+        try {
+            items = ExcelObjectMapper.init()
+                    .initModel(ExcelObjectBasic.class)
+                    .initBook(bookNullable)
+                    .initSheet(sheet)
+                    .buildSheet();
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+            items = e.getObjects();
+        }
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+    }
+
+    @Test
+    public void a_buildObjectWithDropdown() throws Throwable {
+        List<ExcelObjectDropdown> items = Arrays.asList(
+                new ExcelObjectDropdown("nameA", 1, Planet.Earth),
+                new ExcelObjectDropdown("nameB", 2, Planet.Earth),
+                new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
+        );
+        bookDropdown = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookDropdown, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectDropdown.class)
+                .initBook(bookDropdown)
+                .initSheet(sheet)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookDropdown, "src/main/resources/deploy/deploy_dropdown.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithDropdown() throws Throwable {
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDropdown, 0);
+        List<ExcelObjectDropdown> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectDropdown.class)
+                .initBook(bookDropdown)
+                .initSheet(sheet)
+                .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+    }
+
+    @Test
+    public void a_buildObjectWithDropdownThrowNotContain() throws Throwable {
+        List<ExcelObjectDropdown> items = Arrays.asList(
+                new ExcelObjectDropdown("nameA", 1, Planet.Earth),
+                new ExcelObjectDropdown("nameB", 2, null),
+                new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
+        );
+
+        bookDropdownNotContain = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookDropdownNotContain, "sheet");
+        try {
+            ExcelObjectMapper.init()
+                    .initModel(ExcelObjectDropdown.class)
+                    .initBook(bookDropdownNotContain)
+                    .initSheet(sheet)
+                    .buildObject(items);
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+        }
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookDropdownNotContain, "src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithDropdownThrowNotContain() throws Throwable {
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDropdownNotContain, 0);
+        List<ExcelObjectDropdown> items = null;
+        try {
+            items = ExcelObjectMapper.init()
+                    .initModel(ExcelObjectDropdown.class)
+                    .initBook(bookDropdownNotContain)
+                    .initSheet(sheet)
+                    .buildSheet();
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+            items = e.getObjects();
+        }
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+    }
+
+    /*@Test
+    public void a_buildObjectWithDynamicDropdown() throws Throwable {
+        Map optionMap = new HashMap<>();
+        optionMap.put("apple", "a");
+        optionMap.put("banana", "b");
+        optionMap.put("cherry", "c");
+        Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
+
+        List<ExcelObjectDynamicDropdown> items = Arrays.asList(
+                new ExcelObjectDynamicDropdown("nameA", 1, "a"),
+                new ExcelObjectDynamicDropdown("nameA", 1, "b"),
+                new ExcelObjectDynamicDropdown("nameA", 1, "c")
+        );
+
+        bookDynamicDropdown = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookDynamicDropdown, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectDynamicDropdown.class)
+                .initBook(bookDynamicDropdown)
+                .initSheet(sheet)
+                .initDropDowns(dropdown)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+
+        // write
+        ExcelFileUtil.writeExcel(bookDynamicDropdown, "src/main/resources/deploy/deploy_dropdown_dynamic.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithDynamicDropdown() throws Throwable {
+        Map optionMap = new HashMap<>();
+        optionMap.put("apple", "a");
+        optionMap.put("banana", "b");
+        optionMap.put("cherry", "c");
+        Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
+
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDynamicDropdown, 0);
+        List<ExcelObjectDynamicDropdown> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectDynamicDropdown.class)
+                .initBook(bookDynamicDropdown)
+                .initSheet(sheet)
+                .initDropDowns(dropdown)
+                .buildSheet();
+
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+        ExcelSheetUtil.print(sheet);
+    }
+
+    @Test
+    public void a_buildObjectWithTwoDepth() throws Throwable {
+        List<ExcelObjectTwoDepth> items = Arrays.asList(
+                new ExcelObjectTwoDepth("A", "catNameA", "nameA", 1),
+                new ExcelObjectTwoDepth("A", "catNameA", "nameB", 2),
+                new ExcelObjectTwoDepth("A", "catNameA", "nameC", 3),
+                new ExcelObjectTwoDepth("A", "catNameA", "nameD", 4),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameE", 5),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameF", 6),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameG", 7),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameH", 8),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameI", 9),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
         );
 
         XSSFWorkbook book = new XSSFWorkbook();
         XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
-                .initModel(ExcelObjectDemo.class)
+                .initModel(ExcelObjectTwoDepth.class)
                 .initBook(book)
                 .initSheet(sheet)
                 .buildObject(items);
 
         // print-sheet TODO value 확인안됨 -> region 확인
-        /*assertEquals(sheet.getNumMergedRegions(), 3);*/
-        ExcelRegionUtil.print(sheet);
+        ExcelSheetUtil.print(sheet);
 
         // write
-        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_dropdown.xlsx");
+        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_group_2.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithTwoDepth() throws Throwable {
+
+    }
+
+    @Test
+    public void a_buildObjectWithThreeDepth() throws Throwable {
+        List<ExcelObjectThreeDepth> items = Arrays.asList(
+                new ExcelObjectThreeDepth("A", "GroupA", "A`", "nameA", 1),
+                new ExcelObjectThreeDepth("A", "GroupA", "A`","nameB", 2),
+                new ExcelObjectThreeDepth("A", "GroupA", "B`","nameC", 3),
+                new ExcelObjectThreeDepth("A", "GroupA", "B`","nameD", 4),
+                new ExcelObjectThreeDepth("B", "GroupA", "A`","nameE", 5),
+                new ExcelObjectThreeDepth("B", "GroupA", "A`","nameF", 6),
+                new ExcelObjectThreeDepth("B", "GroupA", "B`","nameG", 7),
+                new ExcelObjectThreeDepth("B", "GroupA", "B`","nameH", 8),
+                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameI", 9),
+                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameJ", 10),
+                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameK", 11),
+                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameL", 12)
+        );
+
+        XSSFWorkbook book = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectThreeDepth.class)
+                .initBook(book)
+                .initSheet(sheet)
+                .buildObject(items);
+
+        // print-sheet TODO value 확인안됨 -> region 확인
+        ExcelSheetUtil.print(sheet);
+
+        // write
+        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_group_3.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithThreeDepth() throws Throwable {
+
+    }*/
+
+    @Data
+    @NoArgsConstructor // * must have
+    @AllArgsConstructor
+    @ExcelObject(
+            name = "EOM",
+            cellColor = IndexedColors.YELLOW,
+            borderColor = IndexedColors.BLACK,
+            borderStyle = BorderStyle.THIN)
+    public static class ExcelObjectBasic {
+
+        @ExcelColumn(name = "NAME", index=0, nullable = false)
+        public String name;
+
+        @ExcelColumn(name = "COUNT", index=1)
+        public Integer count;
+
+    }
+
+    @Data
+    @NoArgsConstructor // * must have
+    @AllArgsConstructor
+    @ExcelObject(
+            name = "EOM",
+            cellColor = IndexedColors.YELLOW,
+            borderColor = IndexedColors.BLACK,
+            borderStyle = BorderStyle.THIN)
+    public static class ExcelObjectDropdown {
+
+        @ExcelColumn(name = "NAME", index=0)
+        public String name;
+
+        @ExcelColumn(name = "COUNT", index=1)
+        public Integer count;
+
+        @ExcelColumn(name = "PLANET", index=2)
+        public Planet planet;
+
+    }
+
+    @Data
+    @NoArgsConstructor // * must have
+    @AllArgsConstructor
+    @ExcelObject(
+            name = "EOM",
+            cellColor = IndexedColors.YELLOW,
+            borderColor = IndexedColors.BLACK,
+            borderStyle = BorderStyle.THIN)
+    public static class ExcelObjectDynamicDropdown {
+
+        @ExcelColumn(name = "NAME", index=0)
+        public String name;
+
+        @ExcelColumn(name = "COUNT", index=1)
+        public Integer count;
+
+        @ExcelColumn(name = "FRUIT", index=2, dropdown="dropdownKey")
+        public String fruit;
+
     }
 
     @Data
@@ -81,37 +406,6 @@ public class ExcelObjectMapperTest {
         @ExcelColumn(name = "COUNT", index = 3)
         public Integer count;
 
-    }
-
-    @Test
-    public void buildObjectWithTwoDepth() throws Throwable {
-        List<ExcelObjectTwoDepth> items = Arrays.asList(
-                new ExcelObjectTwoDepth("A", "catNameA", "nameA", 1),
-                new ExcelObjectTwoDepth("A", "catNameA", "nameB", 2),
-                new ExcelObjectTwoDepth("A", "catNameA", "nameC", 3),
-                new ExcelObjectTwoDepth("A", "catNameA", "nameD", 4),
-                new ExcelObjectTwoDepth("B", "catNameA", "nameE", 5),
-                new ExcelObjectTwoDepth("B", "catNameA", "nameF", 6),
-                new ExcelObjectTwoDepth("B", "catNameA", "nameG", 7),
-                new ExcelObjectTwoDepth("B", "catNameA", "nameH", 8),
-                new ExcelObjectTwoDepth("C", "catNameA", "nameI", 9),
-                new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
-                new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
-        );
-
-        XSSFWorkbook book = new XSSFWorkbook();
-        XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
-        ExcelObjectMapper.init()
-                .initModel(ExcelObjectTwoDepth.class)
-                .initBook(book)
-                .initSheet(sheet)
-                .buildObject(items);
-
-        // print-sheet TODO value 확인안됨 -> region 확인
-        ExcelRegionUtil.print(sheet);
-
-        // write
-        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_twodepth.xlsx");
     }
 
     @Data
@@ -140,87 +434,5 @@ public class ExcelObjectMapperTest {
         public Integer count;
 
     }
-
-    @Test
-    public void buildObjectWithThreeDepth() throws Throwable {
-        List<ExcelObjectThreeDepth> items = Arrays.asList(
-                new ExcelObjectThreeDepth("A", "GroupA", "A`", "nameA", 1),
-                new ExcelObjectThreeDepth("A", "GroupA", "A`","nameB", 2),
-                new ExcelObjectThreeDepth("A", "GroupA", "B`","nameC", 3),
-                new ExcelObjectThreeDepth("A", "GroupA", "B`","nameD", 4),
-                new ExcelObjectThreeDepth("B", "GroupA", "A`","nameE", 5),
-                new ExcelObjectThreeDepth("B", "GroupA", "A`","nameF", 6),
-                new ExcelObjectThreeDepth("B", "GroupA", "B`","nameG", 7),
-                new ExcelObjectThreeDepth("B", "GroupA", "B`","nameH", 8),
-                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameI", 9),
-                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameJ", 10),
-                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameK", 11),
-                new ExcelObjectThreeDepth("C", "GroupA", "B`","nameL", 12)
-        );
-
-        XSSFWorkbook book = new XSSFWorkbook();
-        XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
-        ExcelObjectMapper.init()
-                .initModel(ExcelObjectThreeDepth.class)
-                .initBook(book)
-                .initSheet(sheet)
-                .buildObject(items);
-
-        // print-sheet TODO value 확인안됨 -> region 확인
-        ExcelRegionUtil.print(sheet);
-
-        // write
-        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_threedepth.xlsx");
-    }
-
-    @Test
-    public void test() throws Throwable {
-        /*File file = new File("src/main/resources/deploy/deploy_multiple.xlsx");
-        XSSFWorkbook bookDeploy = ExcelFileUtil.readExcelByFile(file);
-        XSSFSheet sheetDeploy = ExcelSheetUtil.getSheet(bookDeploy, 0);
-
-        // print-sheet
-        ExcelSheetUtil.print(sheetDeploy);*/
-    }
-
-    @Test
-    public void buildSheet() throws Throwable {
-        /*XSSFWorkbook book = ExcelFileUtil.readExcelByFile(file);
-        XSSFSheet sheet = ExcelSheetUtil.getSheet(book, 0);
-        ExcelSheetUtil.print(sheet);
-
-        // print-sheet
-        List<ExcelObjectDemo> items = ExcelObjectMapper.init()
-                .initModel(ExcelObjectDemo.class)
-                .initBook(book)
-                .initSheet(sheet)
-                .buildSheet();
-
-        // print-object
-        for(ExcelObjectDemo item : items) {
-            System.out.println(item.toString());
-        }*/
-    }
-
-    @Test
-    public void buildSheetWithGroup() throws Throwable {
-        /*XSSFWorkbook book = ExcelFileUtil.readExcelByFile(fileGroup);
-        XSSFSheet sheet = ExcelSheetUtil.getSheet(book, 0);
-
-        // print-sheet
-        ExcelSheetUtil.print(sheet);
-
-        List<ExcelObjectDemo> items = ExcelObjectMapper.init()
-                .initModel(ExcelObjectDemo.class)
-                .initBook(book)
-                .initSheet(sheet)
-                .buildSheet();
-
-        // print-object
-        for(ExcelObjectDemo item : items) {
-            System.out.println(item.toString());
-        }*/
-    }
-
 
 }

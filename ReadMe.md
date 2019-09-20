@@ -4,6 +4,33 @@
 
 
 
+## @ExcelObject
+
+다음 에너테이션은 `Class`에 설정가능합니다. 시트이름과 시트의 색상을 설정할 수 있습니다.
+
+필수적이지 않으며 설정하지 않을 경우 기본값으로 설정됩니다.
+
+- `name` : 시트의 이름을 설정합니다. (default : "default")
+- `uniqueKeys` : 유니크항목을 지정하는 메타데이터
+- `cellColor` : Cell 색상 (default : IndexedColors.YELLOW)
+- `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
+- `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
+
+```java
+@Excelobject(name="default", uniqueKeys={"name"})
+public class Inventory {
+    
+    @ExcelColumnt(name="NAME", index=0)
+    public String name;
+    
+    @ExcelColumn(name="COUNT", index=1)
+    public Integer count;
+    
+}
+```
+
+
+
 ## @ExcelColumn 
 
 시트의 Column을 정의하는 어노테이션입니다. 
@@ -33,7 +60,9 @@ public class Inventory {
 
 
 
-### Enum
+### Dropdown 
+
+> 드랍다운예제 A (Enum) 
 
 - 자료형에 `Enum`을 사용할 경우 엑셀에서 `Dropdown`으로 구성됩니다. 
 
@@ -59,6 +88,42 @@ public class Inventory {
 ```
 
 ![1568787292518](assets/1568787292518.png)
+
+
+
+> 드랍다운예제 B (Dymamic)
+
+- 드랍다운을 동적으로 구성할 때, `Dropdown` 클래스를 사용하여 데구성할 수 있습니다.
+- Dropdown 인스턴스를 생성한 후, `initDropdowns()` 메소드에 Dynamic Dropdown 인스턴스를 넣어줍니다.
+- @ExcelColumn내에 `dropdown` 속성값에 동적 Dynamic Dropdown의 key 값을 선언합니다.
+
+```java
+Map optionMap = new HashMap<>();
+optionMap.put("apple", "a");
+optionMap.put("banana", "b");
+optionMap.put("cherry", "c");
+Dropdown dropdownA = new Dropdown("dropdown_key", optionMap);
+
+ExcelObjectMapper.init()
+    .initDropdowns(dropdownA, ..)
+
+public static class Inventory {
+
+    @ExcelColumn(name = "NAME", index=0)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index=1)
+    public Integer count;
+
+    @ExcelColumn(name = "FRUIT", index=2, dropdown="dropdown_key")
+    public String fruit;
+
+}
+```
+
+![1568943890156](assets/1568943890156.png)
+
+
 
 ### Group
 
@@ -141,33 +206,6 @@ public class Inventory {
 ![1568797324443](assets/1568797324443.png)
 
 사진을 보면 `CHILD`열은 4행과 5행이 "B`"라는 값으로 연결되지만 앞선 그룹에 의해서 분리됩니다.
-
-
-
-## @ExcelObject
-
-다음 에너테이션은 `Class`에 설정가능합니다. 시트이름과 시트의 색상을 설정할 수 있습니다.
-
-필수적이지 않으며 설정하지 않을 경우 기본값으로 설정됩니다.
-
-- `name` : 시트의 이름을 설정합니다. (default : "default")
-- `uniqueKeys` : 유니크항목을 지정하는 메타데이터
-- `cellColor` : Cell 색상 (default : IndexedColors.YELLOW)
-- `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
-- `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
-
-```java
-@Excelobject(name="default", uniqueKeys={"name"})
-public class Inventory {
-    
-    @ExcelColumnt(name="NAME", index=0)
-    public String name;
-    
-    @ExcelColumn(name="COUNT", index=1)
-    public Integer count;
-    
-}
-```
 
 
 

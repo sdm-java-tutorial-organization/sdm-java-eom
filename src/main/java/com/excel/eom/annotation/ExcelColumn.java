@@ -1,5 +1,6 @@
 package com.excel.eom.annotation;
 
+import com.excel.eom.model.ColumnElement;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -23,15 +24,23 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ExcelColumn {
 
+    // info
+
     String name() default "";
 
     int index() default 0;
 
+    int group() default 0;
+
+    String dropdown() default "";
+
+    boolean nullable() default true;
+
+    // style
+
     int width() default 15;
 
     short alignment() default CellStyle.ALIGN_CENTER;
-
-    int group() default 0;
 
     IndexedColors cellColor() default IndexedColors.WHITE;
 

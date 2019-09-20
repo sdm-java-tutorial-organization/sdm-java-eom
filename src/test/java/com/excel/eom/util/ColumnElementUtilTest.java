@@ -47,13 +47,15 @@ public class ColumnElementUtilTest {
             public void getFieldInfo(Field field,
                                      String name,
                                      Integer index,
+                                     Integer group,
+                                     String dropdown,
+                                     Boolean nullable,
                                      Integer width,
                                      Short alignment,
-                                     Integer group,
                                      IndexedColors cellColor,
                                      BorderStyle borderStyle,
                                      IndexedColors borderColor) {
-                elements.put(field, new ColumnElement(name, index, group));
+                elements.put(field, new ColumnElement(name, index, group, dropdown));
             }
         });
     }
@@ -66,13 +68,15 @@ public class ColumnElementUtilTest {
             public void getFieldInfo(Field field,
                                      String name,
                                      Integer index,
+                                     Integer group,
+                                     String dropdown,
+                                     Boolean nullable,
                                      Integer width,
                                      Short alignment,
-                                     Integer group,
                                      IndexedColors cellColor,
                                      BorderStyle borderStyle,
                                      IndexedColors borderColor) {
-                elements.put(field, new ColumnElement(name, index, group));
+                elements.put(field, new ColumnElement(name, index, group, dropdown));
             }
         });
         Map<Field, ColumnElement> regionElement = ColumnElementUtil.getRegionElement(elements);

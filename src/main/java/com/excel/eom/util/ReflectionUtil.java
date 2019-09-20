@@ -38,9 +38,11 @@ public class ReflectionUtil {
                     callback.getFieldInfo(field,
                             field.getAnnotation(ExcelColumn.class).name(),
                             field.getAnnotation(ExcelColumn.class).index(),
+                            field.getAnnotation(ExcelColumn.class).group(),
+                            field.getAnnotation(ExcelColumn.class).dropdown(),
+                            field.getAnnotation(ExcelColumn.class).nullable(),
                             field.getAnnotation(ExcelColumn.class).width(),
                             field.getAnnotation(ExcelColumn.class).alignment(),
-                            field.getAnnotation(ExcelColumn.class).group(),
                             field.getAnnotation(ExcelColumn.class).cellColor(),
                             field.getAnnotation(ExcelColumn.class).borderStyle(),
                             field.getAnnotation(ExcelColumn.class).borderColor()

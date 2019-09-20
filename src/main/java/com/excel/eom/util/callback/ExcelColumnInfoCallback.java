@@ -10,9 +10,11 @@ public interface ExcelColumnInfoCallback {
     void getFieldInfo(Field field,
                       String name,
                       Integer index,
+                      Integer group,
+                      String dropdown,
+                      Boolean nullable,
                       Integer width,
                       Short alignment,
-                      Integer group,
                       IndexedColors cellColor,
                       BorderStyle borderStyle,
                       IndexedColors borderColor);
