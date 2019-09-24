@@ -85,16 +85,19 @@ public class ExcelObjectMapper {
                 throw new EOMObjectException();
             }
 
-            // TODO group validation
+            // TODO group validation ( ? )
+
 
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
-                public void getFieldInfo(Field field,
+                public void getFieldInfo(// == info ==
+                                         Field field,
                                          String name,
                                          Integer index,
                                          Integer group,
                                          String dropdown,
                                          Boolean nullable,
+                                         // == style ==
                                          Integer width,
                                          Short alignment,
                                          IndexedColors cellColor,
@@ -498,7 +501,7 @@ public class ExcelObjectMapper {
                             }
                         }
                         if(isContain == false) {
-                            cellValue = enums[0];
+                            /*cellValue = null;*/
                             EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
                             bodyException.addDetail(e);
                         }

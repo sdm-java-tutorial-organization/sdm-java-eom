@@ -17,6 +17,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.FixMethodOrder;
@@ -142,6 +144,8 @@ public class ExcelObjectMapperTest {
 
     @Test
     public void b_buildSheetWithDropdown() throws Throwable {
+        XSSFWorkbook bookDropdown = ExcelFileUtil.readExcelByFile(
+                new File("src/main/resources/deploy/deploy_dropdown.xlsx"));
         XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDropdown, 0);
         List<ExcelObjectDropdown> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectDropdown.class)
@@ -181,6 +185,8 @@ public class ExcelObjectMapperTest {
 
     @Test
     public void b_buildSheetWithDropdownThrowNotContain() throws Throwable {
+        XSSFWorkbook bookDropdownNotContain = ExcelFileUtil.readExcelByFile(
+                new File("src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx"));
         XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDropdownNotContain, 0);
         List<ExcelObjectDropdown> items = null;
         try {
@@ -201,20 +207,18 @@ public class ExcelObjectMapperTest {
         });
     }
 
-    /*@Test
+    @Test
     public void a_buildObjectWithDynamicDropdown() throws Throwable {
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
         optionMap.put("cherry", "c");
         Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
-
         List<ExcelObjectDynamicDropdown> items = Arrays.asList(
                 new ExcelObjectDynamicDropdown("nameA", 1, "a"),
                 new ExcelObjectDynamicDropdown("nameA", 1, "b"),
                 new ExcelObjectDynamicDropdown("nameA", 1, "c")
         );
-
         bookDynamicDropdown = new XSSFWorkbook();
         XSSFSheet sheet = ExcelSheetUtil.initSheet(bookDynamicDropdown, "sheet");
         ExcelObjectMapper.init()
@@ -224,13 +228,13 @@ public class ExcelObjectMapperTest {
                 .initDropDowns(dropdown)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-
-        // write
         ExcelFileUtil.writeExcel(bookDynamicDropdown, "src/main/resources/deploy/deploy_dropdown_dynamic.xlsx");
     }
 
     @Test
     public void b_buildSheetWithDynamicDropdown() throws Throwable {
+        XSSFWorkbook bookDynamicDropdown = ExcelFileUtil.readExcelByFile(
+                new File("src/main/resources/deploy/deploy_dropdown_dynamic.xlsx"));
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
@@ -244,7 +248,66 @@ public class ExcelObjectMapperTest {
                 .initSheet(sheet)
                 .initDropDowns(dropdown)
                 .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+        ExcelSheetUtil.print(sheet);
+    }
 
+    @Test
+    public void a_buildObjectWithDynamicDropdownThrowNotContain() throws Throwable {
+        Map optionMap = new HashMap<>();
+        optionMap.put("apple", "a");
+        optionMap.put("banana", "b");
+        optionMap.put("cherry", "c");
+        Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
+        List<ExcelObjectDynamicDropdown> items = Arrays.asList(
+                new ExcelObjectDynamicDropdown("nameA", 1, "d"),
+                new ExcelObjectDynamicDropdown("nameA", 1, "e"),
+                new ExcelObjectDynamicDropdown("nameA", 1, "f")
+        );
+        bookDynamicDropdown = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookDynamicDropdown, "sheet");
+        try {
+            ExcelObjectMapper.init()
+                    .initModel(ExcelObjectDynamicDropdown.class)
+                    .initBook(bookDynamicDropdown)
+                    .initSheet(sheet)
+                    .initDropDowns(dropdown)
+                    .buildObject(items);
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+        }
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookDynamicDropdown, "src/main/resources/deploy/deploy_dropdown_dynamic_throw_notContain.xlsx");
+    }
+
+    @Test
+    public void b_buildSheetWithDynamicDropdownThrowNotContain() throws Throwable {
+        Map optionMap = new HashMap<>();
+        optionMap.put("apple", "a");
+        optionMap.put("banana", "b");
+        optionMap.put("cherry", "c");
+        Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookDynamicDropdown, 0);
+        List<ExcelObjectDynamicDropdown> items = null;
+        try {
+            items = ExcelObjectMapper.init()
+                    .initModel(ExcelObjectDynamicDropdown.class)
+                    .initBook(bookDynamicDropdown)
+                    .initSheet(sheet)
+                    .initDropDowns(dropdown)
+                    .buildSheet();
+        } catch (EOMBodyException e) {
+            for(EOMCellException detail : e.getDetail()) {
+                System.out.println(detail.toString());
+                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+            }
+            items = e.getObjects();
+        }
         items.stream().forEach(item -> {
             System.out.println(item.toString());
         });
@@ -266,25 +329,57 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
                 new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
         );
-
-        XSSFWorkbook book = new XSSFWorkbook();
-        XSSFSheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
+        bookGroupA = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookGroupA, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectTwoDepth.class)
-                .initBook(book)
+                .initBook(bookGroupA)
                 .initSheet(sheet)
                 .buildObject(items);
-
-        // print-sheet TODO value 확인안됨 -> region 확인
         ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookGroupA, "src/main/resources/deploy/deploy_group_2.xlsx");
+    }
 
-        // write
-        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_group_2.xlsx");
+    @Test
+    public void a_buildObjectWithTwoDepthThrow() throws Throwable {
+        List<ExcelObjectTwoDepth> items = Arrays.asList(
+                new ExcelObjectTwoDepth("A", "catNameA", "nameA", 1),
+                new ExcelObjectTwoDepth("A", "catNameA", "nameB", 2),
+                new ExcelObjectTwoDepth("A", "catNameB", "nameC", 3),
+                new ExcelObjectTwoDepth("A", "catNameB", "nameD", 4),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameE", 5),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameF", 6),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameG", 7),
+                new ExcelObjectTwoDepth("B", "catNameA", "nameH", 8),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameI", 9),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
+                new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
+        );
+        bookGroupA = new XSSFWorkbook();
+        XSSFSheet sheet = ExcelSheetUtil.initSheet(bookGroupA, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectTwoDepth.class)
+                .initBook(bookGroupA)
+                .initSheet(sheet)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(bookGroupA, "src/main/resources/deploy/deploy_group_2_throw.xlsx");
     }
 
     @Test
     public void b_buildSheetWithTwoDepth() throws Throwable {
-
+        XSSFWorkbook bookGroupA = ExcelFileUtil.readExcelByFile(
+                new File("src/main/resources/deploy/deploy_group_2.xlsx"));
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookGroupA, 0);
+        List<ExcelObjectTwoDepth> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectTwoDepth.class)
+                .initBook(bookGroupA)
+                .initSheet(sheet)
+                .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+        ExcelSheetUtil.print(sheet);
     }
 
     @Test
@@ -311,18 +406,25 @@ public class ExcelObjectMapperTest {
                 .initBook(book)
                 .initSheet(sheet)
                 .buildObject(items);
-
-        // print-sheet TODO value 확인안됨 -> region 확인
         ExcelSheetUtil.print(sheet);
-
-        // write
         ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_group_3.xlsx");
     }
 
     @Test
     public void b_buildSheetWithThreeDepth() throws Throwable {
-
-    }*/
+        XSSFWorkbook bookGroupB = ExcelFileUtil.readExcelByFile(
+                new File("src/main/resources/deploy/deploy_group_3.xlsx"));
+        XSSFSheet sheet = ExcelSheetUtil.getSheet(bookGroupB, 0);
+        List<ExcelObjectThreeDepth> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectThreeDepth.class)
+                .initBook(bookGroupB)
+                .initSheet(sheet)
+                .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+        ExcelSheetUtil.print(sheet);
+    }
 
     @Data
     @NoArgsConstructor // * must have
