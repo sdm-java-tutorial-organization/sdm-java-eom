@@ -39,7 +39,10 @@ public class Inventory {
 - `index` : Column 순서
 - `group` : Column 그룹
   - 그룹이란, Column의 동일한 항목을 묶어 노출하는 기능을 말합니다.
-
+- `dropdown` : 동적 Dropdown Key
+- `nullable` : 빈값 가능 여부 (default : true)
+- `width` : 넓이 (default : 15)
+- `alignment` : 정렬 (default : CellStyle.ALIGN_CENTER)
 - `cellColor` : Cell 색상 (default : IndexedColors.WHITE)
 - `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
 - `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
@@ -248,5 +251,32 @@ ExcelObjectMapper.init()
 
 ## Exception
 
-- Exception 통합하여 가이드를 제공할 예정입니다.
-- Exception 방식은 문제가 발생했을 때 반환하는 것이 아니라 모든 이슈를 확인하고 반환하는 식으로 구성될 예정입니다.
+### LazyReturn
+
+EOM 기능에는 크게 Header와 Body 2가지 예외처리가 있습니다. 
+
+Header에서 발생하는 예외처리는 Object Column 항목과 Excel의 첫 번째 행이 동일하지 않을 때 발생하며 즉각적으로 예외를 반환합니다.
+
+Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 발생하며, 모든 Body 데이터의 확인이 끝난 후에 예외가 있으면 예외를 반환합니다.
+
+또한 내부적으로 `detail(List<EOMCellException>)`항목을 가지고 있기 때문에 Body 데이터 내에 예외 사항을 상세히 확인할 수 있습니다.
+
+
+
+- `EOMException`(code, message, args)
+  - `EOMHeaderException`
+  - `EOMBodyException`
+    - `EOMCellException`(row, column)
+
+| Exception                       | Code | Desc                                                         |
+| ------------------------------- | ---- | ------------------------------------------------------------ |
+| EOMHeaderException              | 100  | Header에서 발생하는 예외입니다.                              |
+| EOMNotFoundDropdownKeyException | 101  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러입니다.        |
+| EOMBodyException                | 200  | Body에서 발생하는 예외처리로 <br />모든 Body를 확인한 후에 예외를 반환합니다.  (Lazy-Throw) |
+| EOMCellExceltion                | 201  | EOMBodyException내에 세부항목을 나타내는 예외입니다.         |
+| EOMNotNullException             | 202  |                                                              |
+| EOMNotContainException          | 203  |                                                              |
+|                                 |      |                                                              |
+|                                 |      |                                                              |
+|                                 |      |                                                              |
+

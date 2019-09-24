@@ -5,7 +5,7 @@ import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMHeaderException;
 import com.excel.eom.exception.EOMObjectException;
 import com.excel.eom.exception.body.EOMNotContainException;
-import com.excel.eom.exception.body.EOMNotNullableException;
+import com.excel.eom.exception.body.EOMNotNullException;
 import com.excel.eom.model.ColumnElement;
 import com.excel.eom.model.Dropdown;
 import com.excel.eom.util.*;
@@ -255,7 +255,7 @@ public class ExcelObjectMapper {
                 // nullable
                 if(element.getNullable() == false) {
                     if(cellValue == null || cellValue.equals("")) {
-                        EOMNotNullableException e = new EOMNotNullableException(row.getRowNum(), element.getIndex());
+                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), element.getIndex());
                         bodyException.addDetail(e);
                     }
                 }
@@ -483,7 +483,7 @@ public class ExcelObjectMapper {
                 // nullable
                 if(element.getNullable() == false) {
                     if(cellValue == null || cellValue.equals("")) {
-                        EOMNotNullableException e = new EOMNotNullableException(row.getRowNum(), element.getIndex());
+                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), element.getIndex());
                         bodyException.addDetail(e);
                     }
                 }
