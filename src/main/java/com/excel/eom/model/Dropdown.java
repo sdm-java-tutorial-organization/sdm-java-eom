@@ -8,9 +8,9 @@ import java.util.Map;
 public class Dropdown {
 
     private final String key;
-    private final Map<String, String> options;
+    private final Map options;
 
-    public Dropdown(String key, Map<String, String> options) {
+    public Dropdown(String key, Map options) {
         this.key = key;
         this.options = options;
     }

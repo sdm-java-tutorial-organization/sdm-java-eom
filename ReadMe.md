@@ -52,7 +52,7 @@ public class Inventory {
 ```java
 public class Inventory {
  
-    @ExcelColumnt(name="NAME", index=0)
+    @ExcelColumn(name="NAME", index=0)
     public String name;
     
     @ExcelColumn(name="COUNT", index=1)
@@ -99,6 +99,7 @@ public class Inventory {
 - 드랍다운을 동적으로 구성할 때, `Dropdown` 클래스를 사용하여 데구성할 수 있습니다.
 - Dropdown 인스턴스를 생성한 후, `initDropdowns()` 메소드에 Dynamic Dropdown 인스턴스를 넣어줍니다.
 - @ExcelColumn내에 `dropdown` 속성값에 동적 Dynamic Dropdown의 key 값을 선언합니다.
+- 주의할 점으로 dropdown 항목인 `fruitKey`는 `노출 값이 아닌 key 값`으로 설정된 다는 것입니다.
 
 ```java
 Map optionMap = new HashMap<>();
@@ -119,7 +120,7 @@ public static class Inventory {
     public Integer count;
 
     @ExcelColumn(name = "FRUIT", index=2, dropdown="dropdown_key")
-    public String fruit;
+    public String fruitKey;
 
 }
 ```
@@ -273,10 +274,9 @@ Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 �
 | EOMHeaderException              | 100  | Header에서 발생하는 예외입니다.                              |
 | EOMNotFoundDropdownKeyException | 101  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러입니다.        |
 | EOMBodyException                | 200  | Body에서 발생하는 예외처리로 <br />모든 Body를 확인한 후에 예외를 반환합니다.  (Lazy-Throw) |
-| EOMCellExceltion                | 201  | EOMBodyException내에 세부항목을 나타내는 예외입니다.         |
+| EOMCellExceltion                | 201  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |
 | EOMNotNullException             | 202  |                                                              |
-| EOMNotContainException          | 203  |                                                              |
-|                                 |      |                                                              |
-|                                 |      |                                                              |
-|                                 |      |                                                              |
+| EOMWrongDataTypeException       | 203  |                                                              |
+| EOMNotContainException          | 204  |                                                              |
+| EOM                             | 205  |                                                              |
 

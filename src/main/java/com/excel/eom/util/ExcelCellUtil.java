@@ -69,16 +69,34 @@ public class ExcelCellUtil {
      *
      * @param cell
      * @param value
-     * @param field
+     * @param type
      * */
-    public static void setCellValue(XSSFCell cell, Object value, Field field) {
-        if(field.getType().isEnum()) {
-            // Enum
-            value = value != null ? value.toString() : value;
-            cell.setCellValue((String) value);
-        } else {
-            // Class
-            switch (field.getType().getSimpleName()) {
+    public static void setCellValue(XSSFCell cell, Object value, Object type) {
+        if(type instanceof Field) {
+            Field field = (Field) type;
+            if(field.getType().isEnum()) {
+                // Enum
+                value = value != null ? value.toString() : value;
+                cell.setCellValue((String) value);
+            } else {
+                // Class
+                switch (field.getType().getSimpleName()) {
+                    case "String":
+                        cell.setCellValue((String) value);
+                        break;
+                    case "Integer":
+                        cell.setCellValue((Integer) value);
+                        break;
+                    case "Double":
+                        cell.setCellValue((Double) value);
+                        break;
+                }
+            }
+        }
+        // == Field 와 다른 DataType ==
+        else if(type instanceof String) {
+            String className = (String) type;
+            switch (className) {
                 case "String":
                     cell.setCellValue((String) value);
                     break;
@@ -90,6 +108,7 @@ public class ExcelCellUtil {
                     break;
             }
         }
+
     }
 
     /**

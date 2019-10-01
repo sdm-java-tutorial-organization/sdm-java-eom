@@ -40,7 +40,7 @@ public class ExcelObjectMapper {
     private Map<Field, ColumnElement> elements = new HashMap<>();
     private Map<Field, XSSFCellStyle> styles = new HashMap<>();
     private Map<Field, XSSFDataValidationConstraint> dropdowns = new HashMap<>();
-    private Map<String, Map<String, String>> options = new HashMap<>();
+    private Map<String, Map<String, Object>> options = new HashMap<>();
 
     private ExcelObjectMapper() {
 
@@ -151,7 +151,7 @@ public class ExcelObjectMapper {
                             dvHelper = new XSSFDataValidationHelper(sheet);
                         }
                         // TODO null check
-                        Map<String, String> option = options.get(dropdown);
+                        Map<String, Object> option = options.get(dropdown);
                         List<String> items = new ArrayList(option.keySet());
                         dropdowns.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
@@ -245,6 +245,7 @@ public class ExcelObjectMapper {
             public void getElement(Field field, ColumnElement element) {
                 XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
                 Object cellValue = null;
+                String cellType = null;
 
                 try {
                     cellValue = field.get(object);
@@ -274,10 +275,11 @@ public class ExcelObjectMapper {
                     boolean isContain = false;
                     while (iterator.hasNext()) {
                         Map.Entry<String, String> entry = (Map.Entry<String, String>) iterator.next();
-                        if(entry.getValue().equals(cellValue)) {
+                        Object value = entry.getValue();
+                        if(cellValue.equals(value)) {
                             cellValue = entry.getKey();
+                            cellType = entry.getKey().getClass().getSimpleName();
                             isContain = true;
-                            break;
                         }
                     }
                     if(isContain == false) {
@@ -287,7 +289,7 @@ public class ExcelObjectMapper {
                 }
 
                 XSSFCellStyle style = styles.get(field);
-                ExcelCellUtil.setCellValue(cell, cellValue, field);
+                ExcelCellUtil.setCellValue(cell, cellValue, (cellType != null ? cellType : field));
                 ExcelCellUtil.setCellStyle(cell, style);
             }
         });
@@ -510,7 +512,7 @@ public class ExcelObjectMapper {
 
                 // dropdown - dynamic
                 if(element.getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false) {
-                    String key = options.get(element.getDropdown()).get(cellValue);
+                    Object key = options.get(element.getDropdown()).get(cellValue);
                     if(key != null) {
                         cellValue = key;
                     } else {
