@@ -24,20 +24,23 @@ public class ExcelSheetUtil {
      */
     public static void print(XSSFSheet sheet) {
         int rowCount = sheet.getPhysicalNumberOfRows();
-        int columnCount = sheet.getRow(0).getPhysicalNumberOfCells();
-        for (int i = 0; i < rowCount; i++) {
-            XSSFRow row = sheet.getRow(i);
-            List<Object> rowStorage = new ArrayList<>();
-            for (int j = 0; j < columnCount; j++) {
-                XSSFCell cell = row.getCell(j);
-                if (cell != null) {
-                    Object value = ExcelCellUtil.getCellValue(cell);
-                    rowStorage.add(value);
-                } else {
-                    rowStorage.add(null);
+        XSSFRow firstRow = sheet.getRow(0);
+        if(firstRow != null) {
+            int columnCount = sheet.getRow(0).getPhysicalNumberOfCells();
+            for (int i = 0; i < rowCount; i++) {
+                XSSFRow row = sheet.getRow(i);
+                List<Object> rowStorage = new ArrayList<>();
+                for (int j = 0; j < columnCount; j++) {
+                    XSSFCell cell = row.getCell(j);
+                    if (cell != null) {
+                        Object value = ExcelCellUtil.getCellValue(cell);
+                        rowStorage.add(value);
+                    } else {
+                        rowStorage.add(null);
+                    }
                 }
+                System.out.println(Arrays.asList(rowStorage.toArray()));
             }
-            System.out.println(Arrays.asList(rowStorage.toArray()));
         }
     }
 

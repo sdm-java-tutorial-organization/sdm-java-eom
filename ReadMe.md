@@ -265,8 +265,9 @@ Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 �
 
 
 - `EOMException`(code, message, args)
-  - `EOMHeaderException`
-  - `EOMBodyException`
+  - `EOMDevelopmentException` - 개발자 Exception
+  - `EOMHeaderException` - Header Exception
+  - `EOMBodyException` - Body Exception
     - `EOMCellException`(row, column)
 
 | Exception                       | Code | Desc                                                         |

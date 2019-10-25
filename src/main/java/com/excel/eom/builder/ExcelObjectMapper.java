@@ -2,16 +2,20 @@ package com.excel.eom.builder;
 
 
 import com.excel.eom.exception.EOMBodyException;
+import com.excel.eom.exception.EOMDevelopmentException;
 import com.excel.eom.exception.EOMHeaderException;
-import com.excel.eom.exception.EOMObjectException;
+import com.excel.eom.exception.development.EOMObjectException;
 import com.excel.eom.exception.body.EOMNotContainException;
 import com.excel.eom.exception.body.EOMNotNullException;
+import com.excel.eom.exception.development.EOMWrongGroupException;
+import com.excel.eom.exception.development.EOMWrongIndexException;
 import com.excel.eom.model.ColumnElement;
 import com.excel.eom.model.Dropdown;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ColumnElementCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.ExcelObjectInfoCallback;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -23,11 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * 외부 제공 클래스
- * - buildSheet
- * - buildObject(List list)
+ * ExcelObjectMapper
+ *
  * */
 public class ExcelObjectMapper {
 
@@ -45,6 +49,8 @@ public class ExcelObjectMapper {
     private ExcelObjectMapper() {
 
     }
+
+    // ===================== public =====================
 
     public static ExcelObjectMapper init() {
         return new ExcelObjectMapper();
@@ -72,21 +78,95 @@ public class ExcelObjectMapper {
         return this;
     }
 
-    private void initElements()
-            throws EOMObjectException {
-        if (this.clazz != null) {
+    /**
+     * buildObject (object -> sheet)
+     *
+     * @param objects
+     * */
+    public <T> void buildObject(List<T> objects) throws EOMDevelopmentException, EOMBodyException {
+        if (this.book != null && this.sheet != null && this.clazz != null && objects.size() > 0) {
+            initElements();
+            validateAnnotation(elements);
+            presetSheet();
 
-            // instance validation
+            // [h]eader
+            XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
+            setHeaderRow(hRow);
+
+            // [b]ody
+            EOMBodyException bodyException = new EOMBodyException();
+            for (int i = 0; i < objects.size(); i++) {
+                T object = objects.get(i);
+                XSSFRow bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
+                setBodyRow(bRow, object, bodyException);
+            }
+
+            // [r]egion
+            if(bodyException.countDetail() == 0) {
+                Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
+                setRegion(regionEndPointMapByGroup);
+            }
+
+            // [d]ropdown
+            if(bodyException.countDetail() == 0) {
+                setDropDown(objects.size());
+            }
+
+            if(bodyException.countDetail() > 0) {
+                throw bodyException;
+            }
+        }
+    }
+
+    /**
+     * buildSheet (sheet -> object)
+     *
+     * */
+    public <T> List<T> buildSheet() throws EOMHeaderException, EOMBodyException {
+        List<T> items = new ArrayList<>();
+
+        if (this.sheet != null && this.clazz != null) {
+            initElements();
+            int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
+            if(sheetHeight > 1) {
+
+                // [h]eader - haederException
+                XSSFRow hRow = ExcelRowUtil.getRow(this.sheet, 0);
+                checkHeader(hRow);
+
+                // [b]ody - bodyException
+                EOMBodyException bodyException = new EOMBodyException(items);
+                Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
+                for (int i = 1; i < sheetHeight; i++) {
+                    // empty valid
+                    if(ExcelRowUtil.isEmptyRow(this.sheet.getRow(i)) == false) {
+                        items.add((T) getObjectByRow(this.sheet.getRow(i), areaValues, bodyException));
+                    }
+                }
+
+                if(bodyException.countDetail() > 0) {
+                    throw bodyException;
+                }
+            }
+        }
+        return items;
+    }
+
+    // ===================== private =====================
+
+    /**
+     * initElements
+     *
+     * */
+    private void initElements() throws EOMDevelopmentException {
+        if (this.clazz != null) {
             try {
                 Object instance = this.clazz.newInstance();
             } catch (InstantiationException e) {
-                throw new EOMObjectException();
+                throw new EOMObjectException(String.format("check your %s class. Can't create instance.", clazz.getSimpleName()));
             } catch (IllegalAccessException e) {
-                throw new EOMObjectException();
+                throw new EOMObjectException(String.format("check your %s class. Can't create instance.", clazz.getSimpleName()));
             }
-
-            // TODO group validation ( ? )
-
 
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
@@ -106,6 +186,49 @@ public class ExcelObjectMapper {
                     elements.put(field, new ColumnElement(name, index, group, dropdown, nullable));
                 }
             });
+        }
+    }
+
+    /**
+     * validateGroup - 그룹에서 가져야할 규칙이 올바르게 적용되어 있는지 확인
+     *
+     * */
+    private void validateAnnotation(Map<Field, ColumnElement> elements) throws EOMDevelopmentException {
+        List<ColumnElement> list = new ArrayList<>(elements.values());
+        list = list.stream().sorted(new Comparator<ColumnElement>() {
+            @Override
+            public int compare(ColumnElement o1, ColumnElement o2) {
+                return Integer.compare(o1.getIndex(), o2.getIndex());
+            }
+        }).collect(Collectors.toList());
+
+        Integer preIndex = null;
+        Integer preGroup = null;
+        Iterator<ColumnElement> iterator = list.iterator();
+        while (iterator.hasNext()) {
+            ColumnElement columnElement = iterator.next();
+
+            if(preIndex == null) {
+                preIndex = columnElement.getIndex();
+            } else {
+                if(preIndex + 1 != columnElement.getIndex()) {
+                    throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn index option", clazz.getSimpleName()));
+                }
+                preIndex = columnElement.getIndex();
+            }
+
+            if(preGroup == null) {
+                preGroup = columnElement.getGroup();
+                columnElement.setNullable(false);
+            } else {
+                if (preGroup > columnElement.getGroup()) {
+                    preGroup = columnElement.getGroup();
+                    columnElement.setNullable(false);
+                }
+                else if(preGroup < columnElement.getGroup()) {
+                    throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn group option", clazz.getSimpleName()));
+                }
+            }
         }
     }
 
@@ -150,7 +273,7 @@ public class ExcelObjectMapper {
                         if(dvHelper == null) {
                             dvHelper = new XSSFDataValidationHelper(sheet);
                         }
-                        // TODO null check
+                        // TODO null check and exception
                         Map<String, Object> option = options.get(dropdown);
                         List<String> items = new ArrayList(option.keySet());
                         dropdowns.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
@@ -166,41 +289,6 @@ public class ExcelObjectMapper {
                     }
                 }
             });
-        }
-    }
-
-    /**
-     * buildObject (object -> sheet)
-     *
-     * @param objects
-     * */
-    public <T> void buildObject(List<T> objects) throws EOMBodyException {
-        if (this.book != null && this.sheet != null && this.clazz != null) {
-            initElements();
-            presetSheet();
-
-            // [h]eader
-            XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
-            setHeaderRow(hRow);
-
-            // [b]ody
-            EOMBodyException bodyException = new EOMBodyException();
-            for (int i = 0; i < objects.size(); i++) {
-                T object = objects.get(i);
-                XSSFRow bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
-                setBodyRow(bRow, object, bodyException);
-            }
-
-            // [r]egion
-            Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
-            setRegion(regionEndPointMapByGroup);
-
-            // [d]ropdown
-            setDropDown(objects.size());
-
-            if(bodyException.countDetail() > 0) {
-                throw bodyException;
-            }
         }
     }
 
@@ -239,6 +327,10 @@ public class ExcelObjectMapper {
         });
     }
 
+    /**
+     * setBodyRow
+     *
+     * */
     private <T> void setBodyRow(XSSFRow row, T object, EOMBodyException bodyException) {
         ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
             @Override
@@ -295,6 +387,12 @@ public class ExcelObjectMapper {
         });
     }
 
+    /**
+     * checkRegion - pre region validation
+     *
+     * @param objects
+     * @return Map<GroupLevel(int), List<EndPoint(int)>>
+     * */
     private <T> Map<Integer, List<Integer>> checkRegion(List<T> objects) {
         Map<Integer, List<Integer>> regionEndPointMapByGroup = new HashMap<>(); /* Map<Group, List<EndPoint>> */
 
@@ -311,19 +409,37 @@ public class ExcelObjectMapper {
 
             boolean isGroup, isFirstGroup = false;
             if(element.getGroup() > 0) {
+                // [1] is Group
                 if(regionEndPointMapByGroup.get(element.getGroup()) == null) {
+                    // [1.1] is FirstGroup
                     isFirstGroup = true;
                     preEndPoints = nowEndPoints;
                     nowEndPoints = new ArrayList<>();
                     regionEndPointMapByGroup.put(element.getGroup(), nowEndPoints);
                 } else {
+                    // [1.2] non FirstGroup
                     isFirstGroup = false;
                 }
                 isGroup = true;
             } else {
+                // [1] non Group
                 isGroup = false;
             }
 
+            // first group validation
+            if(isFirstGroup) {
+                for(int i=0; i<objects.size(); i++) {
+                    T object = objects.get(i);
+                    Object cellValue = ReflectionUtil.getFieldValue(field, object);
+
+                    // NullPointerException - can't exist null in firstGroup
+                    if(cellValue == null) {
+
+                    }
+                }
+            }
+
+            // TODO Exception
             Object preValue = ReflectionUtil.getFieldValue(field, objects.get(0));
             for(int i=0; i<objects.size(); i++) {
                 T object = objects.get(i);
@@ -354,6 +470,10 @@ public class ExcelObjectMapper {
         return regionEndPointMapByGroup;
     }
 
+    /**
+     * setRegion
+     *
+     * */
     private void setRegion(Map<Integer, List<Integer>> regionEndPointMapByGroup) {
         Iterator iterator = regionEndPointMapByGroup.entrySet().stream().iterator();
         while (iterator.hasNext()) {
@@ -375,6 +495,10 @@ public class ExcelObjectMapper {
         }
     }
 
+    /**
+     * setDropDown
+     *
+     * */
     private void setDropDown(int size) {
             Map<Field, ColumnElement> regionElements = ColumnElementUtil.extractElementByDropdown(this.elements);
             List<Map.Entry<Field, ColumnElement>> regionElementsList = ColumnElementUtil.getElementListWithSort(regionElements);
@@ -410,42 +534,10 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * buildSheet (sheet -> object)
+     * checkHeader
      *
      * */
-    public <T> List<T> buildSheet()
-            throws EOMHeaderException, EOMBodyException {
-        List<T> items = new ArrayList<>();
-
-        if (this.sheet != null && this.clazz != null) {
-            initElements();
-            int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
-            if(sheetHeight > 1) {
-
-                // [h]eader - haederException
-                XSSFRow hRow = ExcelRowUtil.getRow(this.sheet, 0);
-                checkHeader(hRow);
-
-                // [b]ody - bodyException
-                EOMBodyException bodyException = new EOMBodyException(items);
-                Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
-                for (int i = 1; i < sheetHeight; i++) {
-                    // empty valid
-                    if(ExcelRowUtil.isEmptyRow(this.sheet.getRow(i)) == false) {
-                        items.add((T) getObjectByRow(this.sheet.getRow(i), areaValues, bodyException));
-                    }
-                }
-
-                if(bodyException.countDetail() > 0) {
-                    throw bodyException;
-                }
-            }
-        }
-        return items;
-    }
-
-    private void checkHeader(XSSFRow row)
-            throws EOMHeaderException {
+    private void checkHeader(XSSFRow row) throws EOMHeaderException {
         final Map<Field, ColumnElement> elements = this.elements;
         ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
             @Override
@@ -460,6 +552,10 @@ public class ExcelObjectMapper {
         });
     }
 
+    /**
+     * getObjectByRow
+     *
+     * */
     private Object getObjectByRow(XSSFRow row,
                                   Map<Field, Object> areaValues,
                                   EOMBodyException bodyException) {

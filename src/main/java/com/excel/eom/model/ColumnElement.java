@@ -3,9 +3,10 @@ package com.excel.eom.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
-public class ColumnElement {
+public class ColumnElement implements Comparable<ColumnElement> {
 
     public static final String INIT_DROPDOWN = "";
 
@@ -13,6 +14,8 @@ public class ColumnElement {
     private Integer index;
     private Integer group;
     private String dropdown;
+
+    @Setter
     private Boolean nullable;
 
     public ColumnElement(String name, Integer index, Integer group, String dropdown) {
@@ -31,4 +34,8 @@ public class ColumnElement {
         this.nullable = nullable;
     }
 
+    @Override
+    public int compareTo(ColumnElement o) {
+        return Integer.compare(index, o.index);
+    }
 }
