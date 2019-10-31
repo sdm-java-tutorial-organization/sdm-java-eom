@@ -32,4 +32,8 @@ public @interface ExcelObject {
 
     IndexedColors borderColor() default IndexedColors.BLACK;
 
+    int fixedRowCount() default 0;
+
+    int fixedColumnCount() default 0;
+
 }

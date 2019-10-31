@@ -25,7 +25,9 @@ public class ReflectionUtil {
                     clazz.getAnnotation(ExcelObject.class).name(),
                     clazz.getAnnotation(ExcelObject.class).cellColor(),
                     clazz.getAnnotation(ExcelObject.class).borderStyle(),
-                    clazz.getAnnotation(ExcelObject.class).borderColor()
+                    clazz.getAnnotation(ExcelObject.class).borderColor(),
+                    clazz.getAnnotation(ExcelObject.class).fixedRowCount(),
+                    clazz.getAnnotation(ExcelObject.class).fixedColumnCount()
             );
         }
     }

@@ -78,6 +78,43 @@ public class ExcelSheetUtil {
     }
 
     /**
+     * getSheets
+     *
+     * @param book
+     * */
+    public static List<XSSFSheet> getSheets(XSSFWorkbook book) {
+        List<XSSFSheet> result = new ArrayList<>();
+        int sheetCount = book.getNumberOfSheets();
+        for(int i=0; i<sheetCount; i++) {
+            result.add(ExcelSheetUtil.getSheet(book, i));
+        }
+        return result;
+    }
+
+    /**
+     * getSheetNames
+     *
+     * @param book
+     * */
+    public static List<String> getSheetNames(XSSFWorkbook book) {
+        List<String> result = new ArrayList<>();
+        int sheetCount = book.getNumberOfSheets();
+        for(int i=0; i<sheetCount; i++) {
+            result.add(ExcelSheetUtil.getSheet(book, i).getSheetName());
+        }
+        return result;
+    }
+
+    /**
+     * getSheetName
+     *
+     * @param sheet
+     * */
+    public static String getSheetName(XSSFSheet sheet) {
+        return sheet.getSheetName();
+    }
+
+    /**
      * getSheetHeight
      *
      * @param sheet
@@ -174,8 +211,8 @@ public class ExcelSheetUtil {
         sheet.addValidationData(inputDataValidation);
     }
 
-    public static void createFreezePane(XSSFSheet sheet, int length) {
-        sheet.createFreezePane(0, length);
+    public static void createFreezePane(XSSFSheet sheet, int fixedColumnCount, int fixedRowCount) {
+        sheet.createFreezePane(fixedColumnCount, fixedRowCount);
     }
 
 }

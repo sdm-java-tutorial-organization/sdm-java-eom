@@ -27,10 +27,7 @@ public class ColumnElement implements Comparable<ColumnElement> {
     }
 
     public ColumnElement(String name, Integer index, Integer group, String dropdown, Boolean nullable) {
-        this.name = name;
-        this.index = index;
-        this.group = group;
-        this.dropdown = dropdown;
+        this(name, index, group, dropdown);
         this.nullable = nullable;
     }
 

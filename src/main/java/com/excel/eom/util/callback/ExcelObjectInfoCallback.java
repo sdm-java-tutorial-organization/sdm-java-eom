@@ -9,6 +9,8 @@ public interface ExcelObjectInfoCallback {
     void getClassInfo(String name,
                       IndexedColors cellColor,
                       BorderStyle borderStyle,
-                      IndexedColors borderColor);
+                      IndexedColors borderColor,
+                      int fixedRowCount,
+                      int fixedColumnCount);
 
 }

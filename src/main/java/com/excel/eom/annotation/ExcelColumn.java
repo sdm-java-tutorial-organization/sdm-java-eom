@@ -36,6 +36,8 @@ public @interface ExcelColumn {
 
     boolean nullable() default true;
 
+    boolean unique() default false;
+
     // style
 
     int width() default 15;

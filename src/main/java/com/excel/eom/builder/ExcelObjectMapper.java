@@ -1,9 +1,12 @@
 package com.excel.eom.builder;
 
 
+import com.excel.eom.annotation.ExcelObject;
+import com.excel.eom.constant.StringConstant;
 import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMDevelopmentException;
 import com.excel.eom.exception.EOMHeaderException;
+import com.excel.eom.exception.body.EOMWrongDataTypeException;
 import com.excel.eom.exception.development.EOMObjectException;
 import com.excel.eom.exception.body.EOMNotContainException;
 import com.excel.eom.exception.body.EOMNotNullException;
@@ -52,25 +55,49 @@ public class ExcelObjectMapper {
 
     // ===================== public =====================
 
+    /**
+     * init
+     *
+     * */
     public static ExcelObjectMapper init() {
         return new ExcelObjectMapper();
     }
 
+    /**
+     * initModel
+     *
+     * @param clazz
+     * */
     public ExcelObjectMapper initModel(Class<?> clazz) {
         this.clazz = clazz;
         return this;
     }
 
+    /**
+     * initBook
+     *
+     * @param book
+     * */
     public ExcelObjectMapper initBook(XSSFWorkbook book) {
         this.book = book;
         return this;
     }
 
+    /**
+     * initSheet
+     *
+     * @param sheet
+     * */
     public ExcelObjectMapper initSheet(XSSFSheet sheet) {
         this.sheet = sheet;
         return this;
     }
 
+    /**
+     * initDropDowns
+     *
+     * @param dropdowns - array
+     * */
     public ExcelObjectMapper initDropDowns(Dropdown... dropdowns) {
         for (Dropdown dropdown : dropdowns) {
             this.options.put(dropdown.getKey(), dropdown.getOptions());
@@ -84,7 +111,11 @@ public class ExcelObjectMapper {
      * @param objects
      * */
     public <T> void buildObject(List<T> objects) throws EOMDevelopmentException, EOMBodyException {
-        if (this.book != null && this.sheet != null && this.clazz != null && objects.size() > 0) {
+        if (this.book != null &&
+                this.sheet != null &&
+                this.clazz != null &&
+                objects != null &&
+                objects.size() > 0) {
             initElements();
             validateAnnotation(elements);
             presetSheet();
@@ -223,7 +254,7 @@ public class ExcelObjectMapper {
             } else {
                 if (preGroup > columnElement.getGroup()) {
                     preGroup = columnElement.getGroup();
-                    columnElement.setNullable(false);
+                    /*columnElement.setNullable(false);*/
                 }
                 else if(preGroup < columnElement.getGroup()) {
                     throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn group option", clazz.getSimpleName()));
@@ -301,13 +332,18 @@ public class ExcelObjectMapper {
         final Map<Field, ColumnElement> elements = this.elements;
         ReflectionUtil.getClassInfo(this.clazz, new ExcelObjectInfoCallback() {
             @Override
-            public void getClassInfo(String name, IndexedColors cellColor, BorderStyle borderStyle, IndexedColors borderColor) {
+            public void getClassInfo(String name,
+                                     IndexedColors cellColor,
+                                     BorderStyle borderStyle,
+                                     IndexedColors borderColor,
+                                     int fixedRowCount,
+                                     int fixedColumnCount) {
                 XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
                 XSSFFont font = ExcelCellUtil.getFont(book);
 
                 // style - static
                 font.setBold(true);
-                ExcelSheetUtil.createFreezePane(sheet, 1);
+                ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
                 ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
                 ExcelCellUtil.setFont(cellStyle, font);
 
@@ -486,7 +522,9 @@ public class ExcelObjectMapper {
                     if(element.getGroup() == group) {
                         int startPoint = 1;
                         for(int endPoint : endPoints) {
-                            ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, element.getIndex(), element.getIndex());
+                            if(endPoint - startPoint > 0) {
+                                ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, element.getIndex(), element.getIndex());
+                            }
                             startPoint = ++endPoint;
                         }
                     }
@@ -555,6 +593,9 @@ public class ExcelObjectMapper {
     /**
      * getObjectByRow
      *
+     * @param row
+     * @param areaValues
+     * @param bodyException
      * */
     private Object getObjectByRow(XSSFRow row,
                                   Map<Field, Object> areaValues,
@@ -578,11 +619,24 @@ public class ExcelObjectMapper {
                 XSSFCell cell = row.getCell(colIdx);
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
 
+                // region value management
+                if (element.getGroup() > 0) {
+                    CellRangeAddress region = ExcelSheetUtil.getMergedRegion(sheet, rowIdx, colIdx);
+                    if (region != null) {
+                        if(region.getFirstRow() == rowIdx) {
+                            areaValues.put(field, cellValue);
+                        } else {
+                            cellValue = areaValues.get(field);
+                        }
+                    }
+                }
+
                 // nullable
                 if(element.getNullable() == false) {
                     if(cellValue == null || cellValue.equals("")) {
                         EOMNotNullException e = new EOMNotNullException(row.getRowNum(), element.getIndex());
                         bodyException.addDetail(e);
+                        return;
                     }
                 }
 
@@ -600,44 +654,113 @@ public class ExcelObjectMapper {
                         }
                         if(isContain == false) {
                             /*cellValue = null;*/
-                            EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
-                            bodyException.addDetail(e);
+                            if(element.getNullable() && (cellValue == null || cellValue.equals(""))) {
+                                cellValue = null;
+                            } else {
+                                EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                                bodyException.addDetail(e);
+                                return;
+                            }
                         }
                     }
                 }
 
                 // dropdown - dynamic
-                if(element.getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false) {
+                if(
+                        element.getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false
+                        &&
+                        options.get(element.getDropdown()) != null
+                ) {
                     Object key = options.get(element.getDropdown()).get(cellValue);
                     if(key != null) {
                         cellValue = key;
                     } else {
-                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
-                        bodyException.addDetail(e);
-                    }
-                }
-
-                // region value management
-                if (element.getGroup() > 0) {
-                    CellRangeAddress region = ExcelSheetUtil.getMergedRegion(sheet, rowIdx, colIdx);
-                    if (region != null) {
-                        if(region.getFirstRow() == rowIdx) {
-                            areaValues.put(field, cellValue);
+                        if(element.getNullable()) {
+                            cellValue = null;
                         } else {
-                            cellValue = areaValues.get(field);
+                            EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                            bodyException.addDetail(e);
+                            return;
                         }
                     }
                 }
 
                 try {
+                    String type = field.getType().getSimpleName();
+                    switch (type) {
+                        // [1] string -> number
+                        case StringConstant.INTEGER :
+                            if(cellValue != null) {
+                                if(cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false) {
+                                    cellValue = Integer.parseInt((String) cellValue) ;
+                                }
+                            }
+                            break;
+                        // [2] number -> string
+                        case StringConstant.STRING :
+                            if(cellValue != null) {
+                                if(cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false
+                                    ||
+                                    cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false
+                                ) {
+                                    cellValue = cellValue + "";
+                                }
+                            } else {
+                                cellValue = "";
+                            }
+                            break;
+                    }
                     field.set(copyInstance, cellValue);
                 } catch (IllegalAccessException e) {
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), element.getIndex());
+                    bodyException.addDetail(wrongDataTypeException);
+                } catch (IllegalArgumentException e) {
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), element.getIndex());
+                    bodyException.addDetail(wrongDataTypeException);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-                // TODO exception check
             }
         });
         return instance;
+    }
+
+    /**
+     * validateUniqueKey
+     *
+     * @param objects
+     * */
+    private void validateUniqueKey(List<T> objects) {
+
+        List<Field> uniqueFields = new ArrayList<>();
+        List<Field> nonUniqueFields = new ArrayList<>();
+        List<Field> independentUniqueFields = new ArrayList<>();
+        List<Field> independentNonUniqueFields = new ArrayList<>();
+        Field[] fields = clazz.getDeclaredFields();
+
+        // UniqueKeys
+        if (clazz.isAnnotationPresent(ExcelObject.class)) {
+            List<String> uniqueKeys = Arrays.asList(clazz.getAnnotation(ExcelObject.class).uniqueKeys());
+            for(Field field : fields) {
+
+                //
+                if(uniqueKeys.indexOf(field.getName()) > -1) {
+                    uniqueFields.add(field);
+                } else {
+                    nonUniqueFields.add(field);
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
     }
 
 }

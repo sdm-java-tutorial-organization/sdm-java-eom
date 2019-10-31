@@ -15,6 +15,8 @@
 - `cellColor` : Cell 색상 (default : IndexedColors.YELLOW)
 - `borderStyle` : 테두리 스타일 (default : BorderStyle.THIN)
 - `borderColor` : 테두리 색상 (default : IndexedColors.BLACK)
+- `fixedRowCount` : 상단 고정 행 개수 (default : 0)
+- `fixedColumnCount` : 왼쪽 고정 열 개수 (default : 0)
 
 ```java
 @Excelobject(name="default", uniqueKeys={"name"})
@@ -213,6 +215,123 @@ public class Inventory {
 
 
 
+## Unique
+
+엑셀 내부에 유니크를 보장해야 하는 항목에 대해서 유니크를 검증하는 Validation 작업을 지원합니다.
+
+- @UniqueKey
+  - values (String[])
+- @UniqueKeys
+  - values (UniqueKey[])
+  - objectKeyIndex (int) - default : 0
+
+
+
+### Single Key (싱글키)
+
+```java
+@UniqueKey("name")
+public class Inventory {
+
+    @ExcelColumn(name = "NAME", index = 0)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 1)
+    public Integer count;
+
+}
+```
+
+
+
+### Composite Key (복합키)
+
+```java
+@UniqueKey({"parentGroup", "childGroup"})
+public class Inventory {
+
+    @ExcelColumn(name = "PARENT", group = 2, index = 0)
+    public String parentGroup;
+
+    @ExcelColumn(name = "PARENT_NAME", group = 2, index = 1)
+    public String parentGroupName;
+
+    @ExcelColumn(name = "CHILD", group = 1, index = 2)
+    public String childGroup;
+
+    @ExcelColumn(name = "NAME", index = 3)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 4)
+    public Integer count;
+
+}
+```
+
+
+
+###  Multiple Key (중복키)
+
+> Multiple Single Key
+
+```java
+@UniqueKeys({
+	@UniqueKey("name"),
+    @UniqueKey("count")
+})
+public class Inventory {
+
+    @ExcelColumn(name = "NAME", index = 0)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 1)
+    public Integer count;
+
+}
+```
+
+
+
+>  Multiple Composite Key
+
+```java
+@UniqueKeys({
+	@UniqueKey({"parentGroup", "parentName"}),
+    @UniqueKey({"parentGroup", "parentNo"})
+})
+public class Inventory {
+
+    @ExcelColumn(name = "PARENT", group = 2, index = 0)
+    public String parentGroup;
+
+    @ExcelColumn(name = "P_NAME", group = 2, index = 1)
+    public String parentName;
+
+    @ExcelColumn(name = "P_NO", group = 1, index = 2)
+    public Integer parentNo;
+
+    @ExcelColumn(name = "NAME", index = 3)
+    public String name;
+
+    @ExcelColumn(name = "COUNT", index = 4)
+    public Integer count;
+
+}
+```
+
+
+
+>  Select InstanceKey in Multiple Key 
+
+```java
+@UniqueKeys(value = {
+	@UniqueKey({"parentGroup", "parentName"}),
+    @UniqueKey({"parentGroup", "parentNo"})
+}, objectKeyIndex = 0)
+```
+
+
+
 ## ExcelObjectMapper
 
 ExcelObjectMapper는 빌드를 실행하는 클래스입니다. 
@@ -252,6 +371,8 @@ ExcelObjectMapper.init()
 
 ## Exception
 
+
+
 ### LazyReturn
 
 EOM 기능에는 크게 Header와 Body 2가지 예외처리가 있습니다. 
@@ -264,20 +385,40 @@ Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 �
 
 
 
+### Exception Tree
+
+```
+EOMException
+├──EOMDevelopmentException
+|	├──EOMObjectException
+|	├──EOMWrongIndexException
+|	├──EOMWrongGroupException
+├──EOMHeaderException
+|	├──EOMNotFoundDropdownKeyException
+└──EOMBodyException
+|	└──EOMCellExceltion
+|		├──EOMNotNullException
+|		├──EOMWrongDataTypeException
+|		├──EOMNotContainException
+|		├──EOMNotFoundDropdownKeyException
+```
+
 - `EOMException`(code, message, args)
   - `EOMDevelopmentException` - 개발자 Exception
   - `EOMHeaderException` - Header Exception
   - `EOMBodyException` - Body Exception
-    - `EOMCellException`(row, column)
+    - `EOMCellException` - Cell Exception (include row, column)
 
-| Exception                       | Code | Desc                                                         |
-| ------------------------------- | ---- | ------------------------------------------------------------ |
-| EOMHeaderException              | 100  | Header에서 발생하는 예외입니다.                              |
-| EOMNotFoundDropdownKeyException | 101  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러입니다.        |
-| EOMBodyException                | 200  | Body에서 발생하는 예외처리로 <br />모든 Body를 확인한 후에 예외를 반환합니다.  (Lazy-Throw) |
-| EOMCellExceltion                | 201  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |
-| EOMNotNullException             | 202  |                                                              |
-| EOMWrongDataTypeException       | 203  |                                                              |
-| EOMNotContainException          | 204  |                                                              |
-| EOM                             | 205  |                                                              |
+| RootException           | Exception                       | Code | Desc                                                         |
+| ----------------------- | ------------------------------- | ---- | ------------------------------------------------------------ |
+| EOMDevelopmentException | EOMObjectException              | 101  | ExcelObject가 객체를 생성하기에 올바르지 않음                |
+|                         | EOMWrongIndexException          | 102  | Index 옵션이 올바르지 않음 <br />( 0부터 시작하여 1씩 커짐)  |
+|                         | EOMWrongGroupException          | 103  | Group 옵션이 올바르지 않음<br />앞 선 Index 옵션이라면 상위 Group 옵션 |
+| EOMHeaderException      | EOMHeaderException              | 201  | Header에서 발생하는 예외                                     |
+|                         | EOMNotFoundDropdownKeyException | 202  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러               |
+| EOMBodyException        | EOMCellExceltion                | 301  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |
+|                         | EOMNotNullException             | 302  |                                                              |
+|                         | EOMWrongDataTypeException       | 303  |                                                              |
+|                         | EOMNotContainException          | 304  |                                                              |
+|                         | EOMNotFoundDropdownKeyException | 305  |                                                              |
 

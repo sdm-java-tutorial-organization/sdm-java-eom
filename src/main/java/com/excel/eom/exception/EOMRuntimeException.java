@@ -1,8 +1,5 @@
 package com.excel.eom.exception;
 
-import lombok.Data;
-
-@Data
 public class EOMRuntimeException extends RuntimeException {
 
     public EOMRuntimeException() {
@@ -11,6 +8,10 @@ public class EOMRuntimeException extends RuntimeException {
 
     public EOMRuntimeException(String message) {
         super(message);
+    }
+
+    public EOMRuntimeException(String message, Throwable cause) {
+        super(message, cause);
     }
 
     public EOMRuntimeException(Throwable cause) {

@@ -30,6 +30,10 @@ public class ExcelCellUtil {
      * @param cell
      */
     public static Object getCellValue(XSSFCell cell) {
+        if(cell == null) {
+            return null;
+        }
+
         Object result = null;
         switch (cell.getCellType()) {
             case Cell.CELL_TYPE_FORMULA:
@@ -51,6 +55,7 @@ public class ExcelCellUtil {
             case Cell.CELL_TYPE_BLANK:
                 break;
         }
+
         return result;
     }
 
@@ -82,13 +87,25 @@ public class ExcelCellUtil {
                 // Class
                 switch (field.getType().getSimpleName()) {
                     case "String":
-                        cell.setCellValue((String) value);
+                        if(value != null) {
+                            cell.setCellValue((String) value);
+                        } else {
+                            cell.setCellValue((String) "");
+                        }
                         break;
                     case "Integer":
-                        cell.setCellValue((Integer) value);
+                        if(value != null) {
+                            cell.setCellValue((Integer) value);
+                        } else {
+                            cell.setCellValue(0);
+                        }
                         break;
                     case "Double":
-                        cell.setCellValue((Double) value);
+                        if(value != null) {
+                            cell.setCellValue((Double) value);
+                        } else {
+                            cell.setCellValue(0);
+                        }
                         break;
                 }
             }

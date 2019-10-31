@@ -19,10 +19,23 @@ public class EOMBodyException extends EOMRuntimeException {
     private List<EOMCellException> detail = new ArrayList<>();
 
     public EOMBodyException() {
+        super();
+    }
 
+    public EOMBodyException(String message) {
+        super(message);
+    }
+
+    public EOMBodyException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public EOMBodyException(Throwable cause) {
+        super(cause);
     }
 
     public EOMBodyException(List objects) {
+        super();
         this.objects = objects;
     }
 
