@@ -783,8 +783,6 @@ public class ExcelObjectMapper {
         }
 
         // unique validate
-        // name_1
-        // name_count_0
         for (int i = 0; i < objects.size(); i++) {
             T object = objects.get(i);
             Iterator<Map.Entry<List<Field>, Set<String>>> iterator = uniqueKeyStorage.entrySet().stream().iterator();
@@ -810,6 +808,7 @@ public class ExcelObjectMapper {
                             .reduce((a, b) -> a + "__" + b)
                             .get();
                     if (uniqueValueStorage.contains(result + "")) {
+                        // TODO need to column guide
                         EOMNotUniqueException e = new EOMNotUniqueException();
                         bodyException.addDetail(e);
                     } else {

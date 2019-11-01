@@ -215,7 +215,7 @@ public class Inventory {
 
 
 
-## Unique
+## @UniqueKey & @UniqueKeys
 
 엑셀 내부에 유니크를 보장해야 하는 항목에 대해서 유니크를 검증하는 Validation 작업을 지원합니다.
 
@@ -425,6 +425,13 @@ EOMException
 |                         | EOMWrongDataTypeException       | 303  | 데이터 타입이 올바르지 않음                                  |
 |                         | EOMNotContainException          | 304  | Dropdown에 없는 데이터가 전달                                |
 |                         |                                 |      |                                                              |
+
+
+
+### Exception Field
+
+- message (String)
+- args (List\<String>)
 
 
 
