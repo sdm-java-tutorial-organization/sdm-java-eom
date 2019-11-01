@@ -2,6 +2,8 @@ package com.excel.eom.builder;
 
 import com.excel.eom.annotation.ExcelColumn;
 import com.excel.eom.annotation.ExcelObject;
+import com.excel.eom.annotation.UniqueKey;
+import com.excel.eom.annotation.UniqueKeys;
 import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMHeaderException;
 import com.excel.eom.exception.EOMRuntimeException;
@@ -44,6 +46,8 @@ public class ExcelObjectMapperTest {
     static XSSFWorkbook bookGroupA;
     static XSSFWorkbook bookGroupB;
 
+    static String DEPLOY_BASIC = "src/main/resources/deploy/deploy_basic.xlsx";
+
     @Test
     public void a_buildObject() throws Throwable {
         List<ExcelObjectBasic> items = Arrays.asList(
@@ -59,7 +63,7 @@ public class ExcelObjectMapperTest {
                 .initSheet(sheet)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_basic.xlsx");
+        ExcelFileUtil.writeExcel(book, DEPLOY_BASIC);
     }
 
     @Test
@@ -434,6 +438,7 @@ public class ExcelObjectMapperTest {
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
             borderStyle = BorderStyle.THIN)
+    @UniqueKey("name")
     public static class ExcelObjectBasic {
 
         @ExcelColumn(name = "NAME", index=0, nullable = false)
@@ -452,6 +457,7 @@ public class ExcelObjectMapperTest {
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
             borderStyle = BorderStyle.THIN)
+    @UniqueKey({"name", "planet"})
     public static class ExcelObjectDropdown {
 
         @ExcelColumn(name = "NAME", index=0)
@@ -473,6 +479,10 @@ public class ExcelObjectMapperTest {
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
             borderStyle = BorderStyle.THIN)
+    @UniqueKeys({
+            @UniqueKey("name"),
+            @UniqueKey("count")
+    })
     public static class ExcelObjectDynamicDropdown {
 
         @ExcelColumn(name = "NAME", index=0)

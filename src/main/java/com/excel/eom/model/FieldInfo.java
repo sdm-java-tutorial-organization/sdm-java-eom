@@ -1,12 +1,11 @@
 package com.excel.eom.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-public class ColumnElement implements Comparable<ColumnElement> {
+public class FieldInfo implements Comparable<FieldInfo> {
 
     public static final String INIT_DROPDOWN = "";
 
@@ -18,7 +17,7 @@ public class ColumnElement implements Comparable<ColumnElement> {
     @Setter
     private Boolean nullable;
 
-    public ColumnElement(String name, Integer index, Integer group, String dropdown) {
+    public FieldInfo(String name, Integer index, Integer group, String dropdown) {
         this.name = name;
         this.index = index;
         this.group = group;
@@ -26,13 +25,13 @@ public class ColumnElement implements Comparable<ColumnElement> {
         this.nullable = true;
     }
 
-    public ColumnElement(String name, Integer index, Integer group, String dropdown, Boolean nullable) {
+    public FieldInfo(String name, Integer index, Integer group, String dropdown, Boolean nullable) {
         this(name, index, group, dropdown);
         this.nullable = nullable;
     }
 
     @Override
-    public int compareTo(ColumnElement o) {
+    public int compareTo(FieldInfo o) {
         return Integer.compare(index, o.index);
     }
 }

@@ -219,6 +219,8 @@ public class Inventory {
 
 엑셀 내부에 유니크를 보장해야 하는 항목에 대해서 유니크를 검증하는 Validation 작업을 지원합니다.
 
+Excel <-> Object 변환 작업을 우선 진행하고 @UniqueKey or @UniqueKeys 관련 어노테이션을 가지고 있을 때 Unique Validation 작업을 진행합니다.
+
 - @UniqueKey
   - values (String[])
 - @UniqueKeys
@@ -228,6 +230,8 @@ public class Inventory {
 
 
 ### Single Key (싱글키)
+
+하나의 항목이 Unique를 보장해야 할 때
 
 ```java
 @UniqueKey("name")
@@ -245,6 +249,8 @@ public class Inventory {
 
 
 ### Composite Key (복합키)
+
+두 가지 이상의 항목을 결합했을 때 Unique를 보장해야 할 떄
 
 ```java
 @UniqueKey({"parentGroup", "childGroup"})
@@ -271,6 +277,10 @@ public class Inventory {
 
 
 ###  Multiple Key (중복키)
+
+각각의 항목 별로 Unique를 보장해야 할 때
+
+
 
 > Multiple Single Key
 
@@ -338,9 +348,9 @@ ExcelObjectMapper는 빌드를 실행하는 클래스입니다.
 
 Excel -> Object로 변환하는 `buildSheet`와 Object -> Excel로 변환하는 `buildObject` 두 가지의 메소드를 제공합니다.
 
-내부적으로 `ColumnElement.class`라는 Iterator가 있기 때문에 반드시 정의된 object를 사용해야 하는 것이 아닌 
+내부적으로 `FieldInfo.class`라는 Iterator가 있기 때문에 반드시 정의된 object를 사용해야 하는 것이 아닌 
 
-`List<ColumnElement>`로도 빌드가 가능합니다. (TODO : 제공예정)
+`List<FieldInfo>`로도 빌드가 가능합니다. (TODO : 제공예정)
 
 
 
@@ -373,6 +383,51 @@ ExcelObjectMapper.init()
 
 
 
+### Exception Tree
+
+```
+EOMException
+├──EOMDevelopmentException
+|	├──EOMObjectException
+|	├──EOMWrongIndexException
+|	├──EOMWrongGroupException
+|	├──EOMWrongUniqueFieldException
+|	├──EOMNotFoundDropdownKeyException
+├──EOMHeaderException
+└──EOMBodyException
+|	└──EOMCellExceltion
+|		├──EOMNotNullException
+|		├──EOMWrongDataTypeException
+|		└──EOMNotContainException		
+```
+
+- `EOMException`(code, message, args)
+  - `EOMDevelopmentException` - 개발자 Exception
+  - `EOMHeaderException` - Header Exception
+  - `EOMBodyException` - Body Exception
+    - `EOMCellException` - Cell Exception (include row, column)
+
+
+
+### Exception Table 
+
+| RootException           | Exception                       | Code | Desc                                                         |
+| ----------------------- | ------------------------------- | ---- | ------------------------------------------------------------ |
+| EOMDevelopmentException | EOMObjectException              | 101  | ExcelObject가 객체를 생성하기에 올바르지 않음                |
+|                         | EOMWrongIndexException          | 102  | Index 옵션이 올바르지 않음 <br />( 0부터 시작하여 1씩 커짐)  |
+|                         | EOMWrongGroupException          | 103  | Group 옵션이 올바르지 않음<br />앞 선 Index 옵션이라면 상위 Group 옵션 |
+|                         | EOMWrongUniqueFieldException    | 104  | @UniqueKey 어노테이션에서 잘못된 필드 존재                   |
+|                         | EOMNotFoundDropdownKeyException | 105  | 동적 Dropdown Key가 올바르지 않음                            |
+| EOMHeaderException      | EOMHeaderException              | 201  | Header에서 발생하는 예외                                     |
+|                         | EOMNotFoundDropdownKeyException | 202  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러               |
+| EOMBodyException        | EOMCellExceltion                | 301  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |
+|                         | EOMNotNullException             | 302  | Null을 허용하지 않음                                         |
+|                         | EOMWrongDataTypeException       | 303  | 데이터 타입이 올바르지 않음                                  |
+|                         | EOMNotContainException          | 304  | Dropdown에 없는 데이터가 전달                                |
+|                         |                                 |      |                                                              |
+
+
+
 ### LazyReturn
 
 EOM 기능에는 크게 Header와 Body 2가지 예외처리가 있습니다. 
@@ -382,43 +437,3 @@ Header에서 발생하는 예외처리는 Object Column 항목과 Excel의 첫 �
 Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 발생하며, 모든 Body 데이터의 확인이 끝난 후에 예외가 있으면 예외를 반환합니다.
 
 또한 내부적으로 `detail(List<EOMCellException>)`항목을 가지고 있기 때문에 Body 데이터 내에 예외 사항을 상세히 확인할 수 있습니다.
-
-
-
-### Exception Tree
-
-```
-EOMException
-├──EOMDevelopmentException
-|	├──EOMObjectException
-|	├──EOMWrongIndexException
-|	├──EOMWrongGroupException
-├──EOMHeaderException
-|	├──EOMNotFoundDropdownKeyException
-└──EOMBodyException
-|	└──EOMCellExceltion
-|		├──EOMNotNullException
-|		├──EOMWrongDataTypeException
-|		├──EOMNotContainException
-|		├──EOMNotFoundDropdownKeyException
-```
-
-- `EOMException`(code, message, args)
-  - `EOMDevelopmentException` - 개발자 Exception
-  - `EOMHeaderException` - Header Exception
-  - `EOMBodyException` - Body Exception
-    - `EOMCellException` - Cell Exception (include row, column)
-
-| RootException           | Exception                       | Code | Desc                                                         |
-| ----------------------- | ------------------------------- | ---- | ------------------------------------------------------------ |
-| EOMDevelopmentException | EOMObjectException              | 101  | ExcelObject가 객체를 생성하기에 올바르지 않음                |
-|                         | EOMWrongIndexException          | 102  | Index 옵션이 올바르지 않음 <br />( 0부터 시작하여 1씩 커짐)  |
-|                         | EOMWrongGroupException          | 103  | Group 옵션이 올바르지 않음<br />앞 선 Index 옵션이라면 상위 Group 옵션 |
-| EOMHeaderException      | EOMHeaderException              | 201  | Header에서 발생하는 예외                                     |
-|                         | EOMNotFoundDropdownKeyException | 202  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러               |
-| EOMBodyException        | EOMCellExceltion                | 301  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |
-|                         | EOMNotNullException             | 302  |                                                              |
-|                         | EOMWrongDataTypeException       | 303  |                                                              |
-|                         | EOMNotContainException          | 304  |                                                              |
-|                         | EOMNotFoundDropdownKeyException | 305  |                                                              |
-

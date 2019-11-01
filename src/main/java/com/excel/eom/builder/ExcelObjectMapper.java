@@ -2,20 +2,23 @@ package com.excel.eom.builder;
 
 
 import com.excel.eom.annotation.ExcelObject;
+import com.excel.eom.annotation.UniqueKey;
 import com.excel.eom.constant.StringConstant;
 import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMDevelopmentException;
 import com.excel.eom.exception.EOMHeaderException;
+import com.excel.eom.exception.body.EOMNotUniqueException;
 import com.excel.eom.exception.body.EOMWrongDataTypeException;
 import com.excel.eom.exception.development.EOMObjectException;
 import com.excel.eom.exception.body.EOMNotContainException;
 import com.excel.eom.exception.body.EOMNotNullException;
 import com.excel.eom.exception.development.EOMWrongGroupException;
 import com.excel.eom.exception.development.EOMWrongIndexException;
-import com.excel.eom.model.ColumnElement;
+import com.excel.eom.exception.development.EOMWrongUniqueFieldException;
+import com.excel.eom.model.FieldInfo;
 import com.excel.eom.model.Dropdown;
 import com.excel.eom.util.*;
-import com.excel.eom.util.callback.ColumnElementCallback;
+import com.excel.eom.util.callback.FieldInfoCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.ExcelObjectInfoCallback;
 import org.apache.poi.ss.formula.functions.T;
@@ -32,10 +35,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * ExcelObjectMapper
- *
- * */
 public class ExcelObjectMapper {
 
     private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
@@ -44,9 +43,9 @@ public class ExcelObjectMapper {
     private XSSFWorkbook book;
     private XSSFSheet sheet;
     private XSSFDataValidationHelper dvHelper;
-    private Map<Field, ColumnElement> elements = new HashMap<>();
-    private Map<Field, XSSFCellStyle> styles = new HashMap<>();
-    private Map<Field, XSSFDataValidationConstraint> dropdowns = new HashMap<>();
+    private Map<Field, FieldInfo> fieldInfoMap = new HashMap<>();
+    private Map<Field, XSSFCellStyle> fieldStyleMap = new HashMap<>();
+    private Map<Field, XSSFDataValidationConstraint> fieldDropdownMap = new HashMap<>();
     private Map<String, Map<String, Object>> options = new HashMap<>();
 
     private ExcelObjectMapper() {
@@ -57,8 +56,7 @@ public class ExcelObjectMapper {
 
     /**
      * init
-     *
-     * */
+     */
     public static ExcelObjectMapper init() {
         return new ExcelObjectMapper();
     }
@@ -67,7 +65,7 @@ public class ExcelObjectMapper {
      * initModel
      *
      * @param clazz
-     * */
+     */
     public ExcelObjectMapper initModel(Class<?> clazz) {
         this.clazz = clazz;
         return this;
@@ -77,7 +75,7 @@ public class ExcelObjectMapper {
      * initBook
      *
      * @param book
-     * */
+     */
     public ExcelObjectMapper initBook(XSSFWorkbook book) {
         this.book = book;
         return this;
@@ -87,7 +85,7 @@ public class ExcelObjectMapper {
      * initSheet
      *
      * @param sheet
-     * */
+     */
     public ExcelObjectMapper initSheet(XSSFSheet sheet) {
         this.sheet = sheet;
         return this;
@@ -97,7 +95,7 @@ public class ExcelObjectMapper {
      * initDropDowns
      *
      * @param dropdowns - array
-     * */
+     */
     public ExcelObjectMapper initDropDowns(Dropdown... dropdowns) {
         for (Dropdown dropdown : dropdowns) {
             this.options.put(dropdown.getKey(), dropdown.getOptions());
@@ -109,7 +107,7 @@ public class ExcelObjectMapper {
      * buildObject (object -> sheet)
      *
      * @param objects
-     * */
+     */
     public <T> void buildObject(List<T> objects) throws EOMDevelopmentException, EOMBodyException {
         if (this.book != null &&
                 this.sheet != null &&
@@ -117,7 +115,7 @@ public class ExcelObjectMapper {
                 objects != null &&
                 objects.size() > 0) {
             initElements();
-            validateAnnotation(elements);
+            validateAnnotation(fieldInfoMap);
             presetSheet();
 
             // [h]eader
@@ -133,17 +131,25 @@ public class ExcelObjectMapper {
             }
 
             // [r]egion
-            if(bodyException.countDetail() == 0) {
-                Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
-                setRegion(regionEndPointMapByGroup);
-            }
+            /*if (bodyException.countDetail() == 0) {
+
+            }*/
+            Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
+            setRegion(regionEndPointMapByGroup);
+
+            // [u]nique
+            /*if (bodyException.countDetail() == 0) {
+
+            }*/
+            validateUniqueKey(objects, regionEndPointMapByGroup, bodyException);
 
             // [d]ropdown
-            if(bodyException.countDetail() == 0) {
-                setDropDown(objects.size());
-            }
+            /*if (bodyException.countDetail() == 0) {
 
-            if(bodyException.countDetail() > 0) {
+            }*/
+            setDropDown(objects.size());
+
+            if (bodyException.countDetail() > 0) {
                 throw bodyException;
             }
         }
@@ -151,15 +157,14 @@ public class ExcelObjectMapper {
 
     /**
      * buildSheet (sheet -> object)
-     *
-     * */
+     */
     public <T> List<T> buildSheet() throws EOMHeaderException, EOMBodyException {
         List<T> items = new ArrayList<>();
 
         if (this.sheet != null && this.clazz != null) {
             initElements();
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
-            if(sheetHeight > 1) {
+            if (sheetHeight > 1) {
 
                 // [h]eader - haederException
                 XSSFRow hRow = ExcelRowUtil.getRow(this.sheet, 0);
@@ -170,12 +175,16 @@ public class ExcelObjectMapper {
                 Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
                 for (int i = 1; i < sheetHeight; i++) {
                     // empty valid
-                    if(ExcelRowUtil.isEmptyRow(this.sheet.getRow(i)) == false) {
+                    if (ExcelRowUtil.isEmptyRow(this.sheet.getRow(i)) == false) {
                         items.add((T) getObjectByRow(this.sheet.getRow(i), areaValues, bodyException));
                     }
                 }
 
-                if(bodyException.countDetail() > 0) {
+                // [u]nique - bodyException
+                Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(items);
+                validateUniqueKey(items, regionEndPointMapByGroup, bodyException);
+
+                if (bodyException.countDetail() > 0) {
                     throw bodyException;
                 }
             }
@@ -187,8 +196,7 @@ public class ExcelObjectMapper {
 
     /**
      * initElements
-     *
-     * */
+     */
     private void initElements() throws EOMDevelopmentException {
         if (this.clazz != null) {
             try {
@@ -214,7 +222,7 @@ public class ExcelObjectMapper {
                                          IndexedColors cellColor,
                                          BorderStyle borderStyle,
                                          IndexedColors borderColor) {
-                    elements.put(field, new ColumnElement(name, index, group, dropdown, nullable));
+                    fieldInfoMap.put(field, new FieldInfo(name, index, group, dropdown, nullable));
                 }
             });
         }
@@ -222,41 +230,39 @@ public class ExcelObjectMapper {
 
     /**
      * validateGroup - 그룹에서 가져야할 규칙이 올바르게 적용되어 있는지 확인
-     *
-     * */
-    private void validateAnnotation(Map<Field, ColumnElement> elements) throws EOMDevelopmentException {
-        List<ColumnElement> list = new ArrayList<>(elements.values());
-        list = list.stream().sorted(new Comparator<ColumnElement>() {
+     */
+    private void validateAnnotation(Map<Field, FieldInfo> fieldInfoMap) throws EOMDevelopmentException {
+        List<FieldInfo> list = new ArrayList<>(fieldInfoMap.values());
+        list = list.stream().sorted(new Comparator<FieldInfo>() {
             @Override
-            public int compare(ColumnElement o1, ColumnElement o2) {
+            public int compare(FieldInfo o1, FieldInfo o2) {
                 return Integer.compare(o1.getIndex(), o2.getIndex());
             }
         }).collect(Collectors.toList());
 
         Integer preIndex = null;
         Integer preGroup = null;
-        Iterator<ColumnElement> iterator = list.iterator();
+        Iterator<FieldInfo> iterator = list.iterator();
         while (iterator.hasNext()) {
-            ColumnElement columnElement = iterator.next();
+            FieldInfo columnElement = iterator.next();
 
-            if(preIndex == null) {
+            if (preIndex == null) {
                 preIndex = columnElement.getIndex();
             } else {
-                if(preIndex + 1 != columnElement.getIndex()) {
+                if (preIndex + 1 != columnElement.getIndex()) {
                     throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn index option", clazz.getSimpleName()));
                 }
                 preIndex = columnElement.getIndex();
             }
 
-            if(preGroup == null) {
+            if (preGroup == null) {
                 preGroup = columnElement.getGroup();
                 columnElement.setNullable(false);
             } else {
                 if (preGroup > columnElement.getGroup()) {
                     preGroup = columnElement.getGroup();
                     /*columnElement.setNullable(false);*/
-                }
-                else if(preGroup < columnElement.getGroup()) {
+                } else if (preGroup < columnElement.getGroup()) {
                     throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn group option", clazz.getSimpleName()));
                 }
             }
@@ -265,10 +271,9 @@ public class ExcelObjectMapper {
 
     /**
      * presetSheet ( object -> sheet )
-     *
-     * */
+     */
     private void presetSheet() {
-        if(this.clazz != null && this.sheet != null) {
+        if (this.clazz != null && this.sheet != null) {
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
                 public void getFieldInfo(Field field,
@@ -286,37 +291,37 @@ public class ExcelObjectMapper {
                     sheet.setColumnWidth(index, width * 100 * 3);
 
                     // init static dropdown (sheet)
-                    if(field.getType().isEnum()) {
-                        if(dvHelper == null) {
+                    if (field.getType().isEnum()) {
+                        if (dvHelper == null) {
                             dvHelper = new XSSFDataValidationHelper(sheet);
                         }
 
                         Object[] enums = field.getType().getEnumConstants();
                         List<String> items = new ArrayList<>();
-                        for(Object e : enums) {
+                        for (Object e : enums) {
                             items.add(e.toString());
                         }
-                        dropdowns.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
+                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
 
                     // init dynamic dropdown (sheet)
-                    if(dropdown.equals("") == false) {
-                        if(dvHelper == null) {
+                    if (dropdown.equals("") == false) {
+                        if (dvHelper == null) {
                             dvHelper = new XSSFDataValidationHelper(sheet);
                         }
                         // TODO null check and exception
                         Map<String, Object> option = options.get(dropdown);
                         List<String> items = new ArrayList(option.keySet());
-                        dropdowns.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
+                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
 
                     // init style (book)
-                    if(book != null) {
+                    if (book != null) {
                         XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
                         ExcelCellUtil.setCellColor(cellStyle, cellColor);
                         ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
                         ExcelCellUtil.setAlignment(cellStyle, alignment);
-                        styles.put(field, cellStyle);
+                        fieldStyleMap.put(field, cellStyle);
                     }
                 }
             });
@@ -325,11 +330,10 @@ public class ExcelObjectMapper {
 
     /**
      * setHeaderRow
-     *
-     * */
+     */
     private void setHeaderRow(final XSSFRow row) {
         final XSSFWorkbook book = this.book;
-        final Map<Field, ColumnElement> elements = this.elements;
+        final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
         ReflectionUtil.getClassInfo(this.clazz, new ExcelObjectInfoCallback() {
             @Override
             public void getClassInfo(String name,
@@ -351,11 +355,11 @@ public class ExcelObjectMapper {
                 ExcelCellUtil.setCellColor(cellStyle, cellColor);
                 ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
 
-                ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
+                FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
                     @Override
-                    public void getElement(Field field, ColumnElement element) {
-                        XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
-                        ExcelCellUtil.setCellValue(cell, element.getName());
+                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                        XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                        ExcelCellUtil.setCellValue(cell, fieldInfo.getName());
                         ExcelCellUtil.setCellStyle(cell, cellStyle);
                     }
                 });
@@ -364,59 +368,62 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * setBodyRow
+     * setBodyRow(object->sheet)
      *
-     * */
+     * @param row
+     * @param object
+     * @param bodyException
+     */
     private <T> void setBodyRow(XSSFRow row, T object, EOMBodyException bodyException) {
-        ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
+        FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
             @Override
-            public void getElement(Field field, ColumnElement element) {
-                XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = null;
                 String cellType = null;
 
                 try {
                     cellValue = field.get(object);
                 } catch (IllegalAccessException e) {
-                    // * DOESN'T OCCUR (initElement)
+                    // * DOESN'T OCCUR (because of initElement)
                 }
 
                 // nullable
-                if(element.getNullable() == false) {
-                    if(cellValue == null || cellValue.equals("")) {
-                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), element.getIndex());
+                if (fieldInfo.getNullable() == false) {
+                    if (cellValue == null || cellValue.equals("")) {
+                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), fieldInfo.getIndex());
                         bodyException.addDetail(e);
                     }
                 }
 
                 // dropdown - satic
-                if(field.getType().isEnum()) {
-                    if(cellValue == null) {
-                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                if (field.getType().isEnum()) {
+                    if (cellValue == null) {
+                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
                         bodyException.addDetail(e);
                     }
                 }
 
                 // dropdown - dynamic
-                if(element.getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false) {
-                    Iterator iterator = options.get(element.getDropdown()).entrySet().iterator();
+                if (fieldInfo.getDropdown().equals(FieldInfo.INIT_DROPDOWN) == false) {
+                    Iterator iterator = options.get(fieldInfo.getDropdown()).entrySet().iterator();
                     boolean isContain = false;
                     while (iterator.hasNext()) {
                         Map.Entry<String, String> entry = (Map.Entry<String, String>) iterator.next();
                         Object value = entry.getValue();
-                        if(cellValue.equals(value)) {
+                        if (cellValue.equals(value)) {
                             cellValue = entry.getKey();
                             cellType = entry.getKey().getClass().getSimpleName();
                             isContain = true;
                         }
                     }
-                    if(isContain == false) {
-                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                    if (isContain == false) {
+                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
                         bodyException.addDetail(e);
                     }
                 }
 
-                XSSFCellStyle style = styles.get(field);
+                XSSFCellStyle style = fieldStyleMap.get(field);
                 ExcelCellUtil.setCellValue(cell, cellValue, (cellType != null ? cellType : field));
                 ExcelCellUtil.setCellStyle(cell, style);
             }
@@ -424,34 +431,43 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * checkRegion - pre region validation
+     * checkRegion - pre region validation (EndPoint is after the last point)
+     *
      *
      * @param objects
-     * @return Map<GroupLevel(int), List<EndPoint(int)>>
-     * */
+     * @return Map[GroupLevel(int), List[EndPoint(int)]]
+     */
     private <T> Map<Integer, List<Integer>> checkRegion(List<T> objects) {
         Map<Integer, List<Integer>> regionEndPointMapByGroup = new HashMap<>(); /* Map<Group, List<EndPoint>> */
 
         // extract group column & sort
-        Map<Field, ColumnElement> regionElements = ColumnElementUtil.extractElementByGroup(this.elements);
-        List<Map.Entry<Field, ColumnElement>> regionElementsList = ColumnElementUtil.getElementListWithSort(regionElements);
+        Map<Field, FieldInfo> regionFieldInfo = FieldInfoUtil.extractFieldInfoByGroup(this.fieldInfoMap);
+        List<Map.Entry<Field, FieldInfo>> regionFieldInfoList = FieldInfoUtil.getElementListWithSort(regionFieldInfo);
 
+        /**
+         * [FLOW]
+         * for field(by group):
+         *  get FirstGroup
+         *  for objects:
+         *    get EndPoint
+         * return List[EndPoint]
+         * */
         List nowEndPoints = new ArrayList<>(), preEndPoints = new ArrayList<>();
-        Iterator<Map.Entry<Field, ColumnElement>> iterator = regionElementsList.iterator();
+        Iterator<Map.Entry<Field, FieldInfo>> iterator = regionFieldInfoList.iterator();
         while (iterator.hasNext()) {
-            Map.Entry<Field, ColumnElement> entry = iterator.next();
+            Map.Entry<Field, FieldInfo> entry = iterator.next();
             Field field = entry.getKey();
-            ColumnElement element = entry.getValue();
+            FieldInfo fieldInfo = entry.getValue();
 
             boolean isGroup, isFirstGroup = false;
-            if(element.getGroup() > 0) {
+            if (fieldInfo.getGroup() > 0) {
                 // [1] is Group
-                if(regionEndPointMapByGroup.get(element.getGroup()) == null) {
+                if (regionEndPointMapByGroup.get(fieldInfo.getGroup()) == null) {
                     // [1.1] is FirstGroup
                     isFirstGroup = true;
                     preEndPoints = nowEndPoints;
                     nowEndPoints = new ArrayList<>();
-                    regionEndPointMapByGroup.put(element.getGroup(), nowEndPoints);
+                    regionEndPointMapByGroup.put(fieldInfo.getGroup(), nowEndPoints);
                 } else {
                     // [1.2] non FirstGroup
                     isFirstGroup = false;
@@ -463,43 +479,41 @@ public class ExcelObjectMapper {
             }
 
             // first group validation
-            if(isFirstGroup) {
-                for(int i=0; i<objects.size(); i++) {
+            // already done (in object -> sheet or sheet -> object)
+            /*if (isFirstGroup) {
+                for (int i = 0; i < objects.size(); i++) {
                     T object = objects.get(i);
                     Object cellValue = ReflectionUtil.getFieldValue(field, object);
-
                     // NullPointerException - can't exist null in firstGroup
-                    if(cellValue == null) {
-
-                    }
+                    if (cellValue == null) { }
                 }
-            }
+            }*/
 
-            // TODO Exception
             Object preValue = ReflectionUtil.getFieldValue(field, objects.get(0));
-            for(int i=0; i<objects.size(); i++) {
+            for (int i = 0; i < objects.size(); i++) {
                 T object = objects.get(i);
                 Object cellValue = ReflectionUtil.getFieldValue(field, object);
-
-                if(isGroup) {
+                if (isGroup) {
                     // group
-                    if(isFirstGroup) {
-                        if(preValue.equals(cellValue) == false) {
+                    if (isFirstGroup) {
+                        if (preValue.equals(cellValue) == false) {
                             preValue = cellValue;
                             nowEndPoints.add((i + 1) - 1); // * pre cell merge (-1)
                         } else {
-                            if(preEndPoints != null) {
-                                if(preEndPoints.indexOf((i + 1) - 1) > -1) {
+                            if (preEndPoints != null) {
+                                if (preEndPoints.indexOf((i + 1) - 1) > -1) {
                                     nowEndPoints.add((i + 1) - 1); // * pre cell merge (-1)
                                 }
                             }
                         }
                     } else {
-                        // TODO exception check
+                        // TODO exception check - must same upper cell
                     }
                 }
             }
-            if(isFirstGroup) {
+
+            // last EndPoint
+            if (isFirstGroup) {
                 nowEndPoints.add((objects.size() + 1) - 1); // * pre cell merge (-1)
             }
         }
@@ -509,21 +523,22 @@ public class ExcelObjectMapper {
     /**
      * setRegion
      *
-     * */
+     * @param regionEndPointMapByGroup
+     */
     private void setRegion(Map<Integer, List<Integer>> regionEndPointMapByGroup) {
         Iterator iterator = regionEndPointMapByGroup.entrySet().stream().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, List<Integer>> entry = (Map.Entry<Integer, List<Integer>>) iterator.next();
             Integer group = entry.getKey();
             List<Integer> endPoints = entry.getValue();
-            ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
+            FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
                 @Override
-                public void getElement(Field field, ColumnElement element) {
-                    if(element.getGroup() == group) {
+                public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                    if (fieldInfo.getGroup() == group) {
                         int startPoint = 1;
-                        for(int endPoint : endPoints) {
-                            if(endPoint - startPoint > 0) {
-                                ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, element.getIndex(), element.getIndex());
+                        for (int endPoint : endPoints) {
+                            if (endPoint - startPoint > 0) {
+                                ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, fieldInfo.getIndex(), fieldInfo.getIndex());
                             }
                             startPoint = ++endPoint;
                         }
@@ -536,53 +551,53 @@ public class ExcelObjectMapper {
     /**
      * setDropDown
      *
-     * */
+     * @param size
+     */
     private void setDropDown(int size) {
-            Map<Field, ColumnElement> regionElements = ColumnElementUtil.extractElementByDropdown(this.elements);
-            List<Map.Entry<Field, ColumnElement>> regionElementsList = ColumnElementUtil.getElementListWithSort(regionElements);
-            Iterator<Map.Entry<Field, ColumnElement>> iterator = regionElementsList.iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Field, ColumnElement> entry = iterator.next();
-                Field field = entry.getKey();
-                ColumnElement element = entry.getValue();
-                if(field.getType().isEnum()) {
-                    // [1] static (enum)
-                    for(int i=0; i<size; i++) {
-                        CellRangeAddressList region = ExcelSheetUtil.getRegion(
-                                (i + 1), (i + 1), element.getIndex(), element.getIndex());
-                        ExcelSheetUtil.setDropdown(
-                                this.sheet,
-                                this.dvHelper,
-                                this.dropdowns.get(field),
-                                region);
-                    }
-                } else {
-                    // [2] dynamic
-                    for(int i=0; i<size; i++) {
-                        CellRangeAddressList region = ExcelSheetUtil.getRegion(
-                                (i + 1), (i + 1), element.getIndex(), element.getIndex());
-                        ExcelSheetUtil.setDropdown(
-                                this.sheet,
-                                this.dvHelper,
-                                this.dropdowns.get(field),
-                                region);
-                    }
+        Map<Field, FieldInfo> regionFieldInfo = FieldInfoUtil.extractFieldInfoByDropdown(this.fieldInfoMap);
+        List<Map.Entry<Field, FieldInfo>> regionFieldInfoList = FieldInfoUtil.getElementListWithSort(regionFieldInfo);
+        Iterator<Map.Entry<Field, FieldInfo>> iterator = regionFieldInfoList.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Field, FieldInfo> entry = iterator.next();
+            Field field = entry.getKey();
+            FieldInfo fieldInfo = entry.getValue();
+            if (field.getType().isEnum()) {
+                // [1] static (enum)
+                for (int i = 0; i < size; i++) {
+                    CellRangeAddressList region = ExcelSheetUtil.getRegion(
+                            (i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
+                    ExcelSheetUtil.setDropdown(
+                            this.sheet,
+                            this.dvHelper,
+                            this.fieldDropdownMap.get(field),
+                            region);
+                }
+            } else {
+                // [2] dynamic
+                for (int i = 0; i < size; i++) {
+                    CellRangeAddressList region = ExcelSheetUtil.getRegion(
+                            (i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
+                    ExcelSheetUtil.setDropdown(
+                            this.sheet,
+                            this.dvHelper,
+                            this.fieldDropdownMap.get(field),
+                            region);
                 }
             }
+        }
     }
 
     /**
      * checkHeader
-     *
-     * */
+     */
     private void checkHeader(XSSFRow row) throws EOMHeaderException {
-        final Map<Field, ColumnElement> elements = this.elements;
-        ColumnElementUtil.getElement(elements, new ColumnElementCallback() {
+        final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
+        FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
             @Override
-            public void getElement(Field field, ColumnElement element) {
-                XSSFCell cell = ExcelCellUtil.getCell(row, element.getIndex());
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
-                if(element.getName().equals(cellValue) == false) {
+                if (fieldInfo.getName().equals(cellValue) == false) {
                     // * THROW WRONG_HEADER_EXCEPTION
                     throw new EOMHeaderException();
                 }
@@ -591,12 +606,12 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * getObjectByRow
+     * getObjectByRow (sheet -> object)
      *
      * @param row
      * @param areaValues
      * @param bodyException
-     * */
+     */
     private Object getObjectByRow(XSSFRow row,
                                   Map<Field, Object> areaValues,
                                   EOMBodyException bodyException) {
@@ -612,18 +627,18 @@ public class ExcelObjectMapper {
         final XSSFSheet sheet = this.sheet;
         final Object copyInstance = instance;
         int rowIdx = ExcelRowUtil.getRowNum(row);
-        ColumnElementUtil.getElement(this.elements, new ColumnElementCallback() {
+        FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
             @Override
-            public void getElement(Field field, ColumnElement element) {
-                int colIdx = element.getIndex();
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                int colIdx = fieldInfo.getIndex();
                 XSSFCell cell = row.getCell(colIdx);
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
 
                 // region value management
-                if (element.getGroup() > 0) {
+                if (fieldInfo.getGroup() > 0) {
                     CellRangeAddress region = ExcelSheetUtil.getMergedRegion(sheet, rowIdx, colIdx);
                     if (region != null) {
-                        if(region.getFirstRow() == rowIdx) {
+                        if (region.getFirstRow() == rowIdx) {
                             areaValues.put(field, cellValue);
                         } else {
                             cellValue = areaValues.get(field);
@@ -632,32 +647,32 @@ public class ExcelObjectMapper {
                 }
 
                 // nullable
-                if(element.getNullable() == false) {
-                    if(cellValue == null || cellValue.equals("")) {
-                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), element.getIndex());
+                if (fieldInfo.getNullable() == false) {
+                    if (cellValue == null || cellValue.equals("")) {
+                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), fieldInfo.getIndex());
                         bodyException.addDetail(e);
                         return;
                     }
                 }
 
                 // dropdown - static
-                if(field.getType().isEnum()) {
+                if (field.getType().isEnum()) {
                     Enum[] enums = (Enum[]) field.getType().getEnumConstants();
-                    if(enums.length > 0) {
+                    if (enums.length > 0) {
                         boolean isContain = false;
-                        for(Enum e : enums) {
-                            if(e.name().equals(cellValue)) {
+                        for (Enum e : enums) {
+                            if (e.name().equals(cellValue)) {
                                 isContain = true;
                                 cellValue = e;
                                 break;
                             }
                         }
-                        if(isContain == false) {
+                        if (isContain == false) {
                             /*cellValue = null;*/
-                            if(element.getNullable() && (cellValue == null || cellValue.equals(""))) {
+                            if (fieldInfo.getNullable() && (cellValue == null || cellValue.equals(""))) {
                                 cellValue = null;
                             } else {
-                                EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                                EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
                                 bodyException.addDetail(e);
                                 return;
                             }
@@ -666,19 +681,19 @@ public class ExcelObjectMapper {
                 }
 
                 // dropdown - dynamic
-                if(
-                        element.getDropdown().equals(ColumnElement.INIT_DROPDOWN) == false
-                        &&
-                        options.get(element.getDropdown()) != null
+                if (
+                        fieldInfo.getDropdown().equals(FieldInfo.INIT_DROPDOWN) == false
+                                &&
+                                options.get(fieldInfo.getDropdown()) != null
                 ) {
-                    Object key = options.get(element.getDropdown()).get(cellValue);
-                    if(key != null) {
+                    Object key = options.get(fieldInfo.getDropdown()).get(cellValue);
+                    if (key != null) {
                         cellValue = key;
                     } else {
-                        if(element.getNullable()) {
+                        if (fieldInfo.getNullable()) {
                             cellValue = null;
                         } else {
-                            EOMNotContainException e = new EOMNotContainException(row.getRowNum(), element.getIndex());
+                            EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
                             bodyException.addDetail(e);
                             return;
                         }
@@ -689,19 +704,19 @@ public class ExcelObjectMapper {
                     String type = field.getType().getSimpleName();
                     switch (type) {
                         // [1] string -> number
-                        case StringConstant.INTEGER :
-                            if(cellValue != null) {
-                                if(cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false) {
-                                    cellValue = Integer.parseInt((String) cellValue) ;
+                        case StringConstant.INTEGER:
+                            if (cellValue != null) {
+                                if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false) {
+                                    cellValue = Integer.parseInt((String) cellValue);
                                 }
                             }
                             break;
                         // [2] number -> string
-                        case StringConstant.STRING :
-                            if(cellValue != null) {
-                                if(cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false
-                                    ||
-                                    cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false
+                        case StringConstant.STRING:
+                            if (cellValue != null) {
+                                if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false
+                                        ||
+                                        cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false
                                 ) {
                                     cellValue = cellValue + "";
                                 }
@@ -712,10 +727,10 @@ public class ExcelObjectMapper {
                     }
                     field.set(copyInstance, cellValue);
                 } catch (IllegalAccessException e) {
-                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), element.getIndex());
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), fieldInfo.getIndex());
                     bodyException.addDetail(wrongDataTypeException);
                 } catch (IllegalArgumentException e) {
-                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), element.getIndex());
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), fieldInfo.getIndex());
                     bodyException.addDetail(wrongDataTypeException);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -729,38 +744,81 @@ public class ExcelObjectMapper {
      * validateUniqueKey
      *
      * @param objects
-     * */
-    private void validateUniqueKey(List<T> objects) {
-
-        List<Field> uniqueFields = new ArrayList<>();
-        List<Field> nonUniqueFields = new ArrayList<>();
-        List<Field> independentUniqueFields = new ArrayList<>();
-        List<Field> independentNonUniqueFields = new ArrayList<>();
-        Field[] fields = clazz.getDeclaredFields();
-
-        // UniqueKeys
-        if (clazz.isAnnotationPresent(ExcelObject.class)) {
-            List<String> uniqueKeys = Arrays.asList(clazz.getAnnotation(ExcelObject.class).uniqueKeys());
-            for(Field field : fields) {
-
-                //
-                if(uniqueKeys.indexOf(field.getName()) > -1) {
-                    uniqueFields.add(field);
-                } else {
-                    nonUniqueFields.add(field);
-                }
-            }
+     * @param bodyException
+     */
+    private <T> void validateUniqueKey(List<T> objects,
+                                       Map<Integer, List<Integer>> regionEndPointMapByGroup,
+                                       EOMBodyException bodyException) throws EOMDevelopmentException {
+        List<List<String>> uniqueKeys = UniqueKeyUtil.getUniqueValues(clazz);
+        if (uniqueKeys.size() == 0) {
+            return;
         }
 
+        // field validate
+        Field[] fields = clazz.getDeclaredFields();
+        boolean validateResult = UniqueKeyUtil.validateField(fields, uniqueKeys);
+        if (validateResult == false) {
+            throw new EOMWrongUniqueFieldException();
+        }
 
+        // init <>
+        Map<List<Field>, Set<String>> uniqueKeyStorage = new HashMap<>();
+        Map<List<Field>, Integer> uniqueKeyGroupLevelStorage = new HashMap<>();
+        for (List<String> uniqueKey : uniqueKeys) {
+            List<Field> key = new ArrayList<>();
+            List<Integer> groups = new ArrayList<>();
+            for (String fieldElement : uniqueKey) {
+                FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
+                    @Override
+                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                        if (field.getName().equals(fieldElement)) {
+                            key.add(field);
+                            groups.add(fieldInfo.getGroup());
+                        }
+                    }
+                });
+            }
+            uniqueKeyStorage.put(key, new HashSet<>());
+            uniqueKeyGroupLevelStorage.put(key, groups.stream().min(Integer::min).get());
+        }
 
+        // unique validate
+        // name_1
+        // name_count_0
+        for (int i = 0; i < objects.size(); i++) {
+            T object = objects.get(i);
+            Iterator<Map.Entry<List<Field>, Set<String>>> iterator = uniqueKeyStorage.entrySet().stream().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<List<Field>, Set<String>> entry = iterator.next();
+                List<Field> uniqueKeyByFields = entry.getKey();
+                Set<String> uniqueValueStorage = entry.getValue();
 
+                int uniqueKeyGroupLevel = uniqueKeyGroupLevelStorage.get(uniqueKeyByFields);
+                List<Integer> groupEndPoint = regionEndPointMapByGroup.get(uniqueKeyGroupLevel);
 
+                // isLowerGroup ? OR isFirstGroup ?
+                if(uniqueKeyGroupLevel == 0 || groupEndPoint.indexOf(i) > 0) {
+                    Object result = uniqueKeyByFields.stream()
+                            .map(field -> {
+                                try {
+                                    return field.get(object);
+                                } catch (IllegalAccessException e) {
+                                    e.printStackTrace();
+                                    return "";
+                                }
+                            })
+                            .reduce((a, b) -> a + "__" + b)
+                            .get();
+                    if (uniqueValueStorage.contains(result + "")) {
+                        EOMNotUniqueException e = new EOMNotUniqueException();
+                        bodyException.addDetail(e);
+                    } else {
+                        uniqueValueStorage.add(result + "");
+                    }
+                }
 
-
-
-
-
+            }
+        }
     }
 
 }

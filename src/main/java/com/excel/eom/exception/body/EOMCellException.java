@@ -3,7 +3,7 @@ package com.excel.eom.exception.body;
 import com.excel.eom.exception.EOMRuntimeException;
 import lombok.Getter;
 
-public class EOMCellException extends EOMRuntimeException {
+public abstract class EOMCellException extends EOMRuntimeException {
 
     @Getter
     public int code;

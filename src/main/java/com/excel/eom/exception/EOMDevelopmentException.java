@@ -1,11 +1,23 @@
 package com.excel.eom.exception;
 
-public class EOMDevelopmentException extends EOMRuntimeException {
+public abstract class EOMDevelopmentException extends EOMRuntimeException {
 
     public static final String TYPE = "DEV";
 
-    public EOMDevelopmentException(String messqage) {
-        super(String.format("[%s]", TYPE) + messqage);
+    public EOMDevelopmentException() {
+        super();
+    }
+
+    public EOMDevelopmentException(String message) {
+        super(message);
+    }
+
+    public EOMDevelopmentException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public EOMDevelopmentException(Throwable cause) {
+        super(cause);
     }
 
 }

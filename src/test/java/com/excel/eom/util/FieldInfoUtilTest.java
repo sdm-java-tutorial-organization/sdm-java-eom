@@ -1,7 +1,7 @@
 package com.excel.eom.util;
 
 import com.excel.eom.annotation.ExcelColumn;
-import com.excel.eom.model.ColumnElement;
+import com.excel.eom.model.FieldInfo;
 import com.excel.eom.tutorial.ExcelObjectDemo;
 import com.excel.eom.tutorial.Planet;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
@@ -15,9 +15,9 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class ColumnElementUtilTest {
+public class FieldInfoUtilTest {
 
-    public class ColumnElementTest {
+    public class FieldInfoTest {
 
         @ExcelColumn(name = "PLANET2", group = 1, index = 1)
         public Planet plane2;
@@ -41,8 +41,8 @@ public class ColumnElementUtilTest {
 
     @Test
     public void getElement() {
-        Map<Field, ColumnElement> elements = new HashMap<>();
-        ReflectionUtil.getFieldInfo(ColumnElementTest.class, new ExcelColumnInfoCallback() {
+        Map<Field, FieldInfo> elements = new HashMap<>();
+        ReflectionUtil.getFieldInfo(FieldInfoTest.class, new ExcelColumnInfoCallback() {
             @Override
             public void getFieldInfo(Field field,
                                      String name,
@@ -55,15 +55,15 @@ public class ColumnElementUtilTest {
                                      IndexedColors cellColor,
                                      BorderStyle borderStyle,
                                      IndexedColors borderColor) {
-                elements.put(field, new ColumnElement(name, index, group, dropdown));
+                elements.put(field, new FieldInfo(name, index, group, dropdown));
             }
         });
     }
 
     @Test
-    public void getRegionElement() {
-        Map<Field, ColumnElement> elements = new HashMap<>();
-        ReflectionUtil.getFieldInfo(ColumnElementTest.class, new ExcelColumnInfoCallback() {
+    public void extractFieldInfoByRegion() {
+        Map<Field, FieldInfo> elements = new HashMap<>();
+        ReflectionUtil.getFieldInfo(FieldInfoTest.class, new ExcelColumnInfoCallback() {
             @Override
             public void getFieldInfo(Field field,
                                      String name,
@@ -76,10 +76,10 @@ public class ColumnElementUtilTest {
                                      IndexedColors cellColor,
                                      BorderStyle borderStyle,
                                      IndexedColors borderColor) {
-                elements.put(field, new ColumnElement(name, index, group, dropdown));
+                elements.put(field, new FieldInfo(name, index, group, dropdown));
             }
         });
-        Map<Field, ColumnElement> regionElement = ColumnElementUtil.getRegionElement(elements);
+        Map<Field, FieldInfo> regionElement = FieldInfoUtil.extractFieldInfoByRegion(elements);
         System.out.println(regionElement);
     }
 }

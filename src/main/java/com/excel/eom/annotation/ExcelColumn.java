@@ -1,6 +1,6 @@
 package com.excel.eom.annotation;
 
-import com.excel.eom.model.ColumnElement;
+import com.excel.eom.model.FieldInfo;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
