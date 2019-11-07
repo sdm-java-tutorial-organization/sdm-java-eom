@@ -19,7 +19,7 @@ public class EOMBodyException extends EOMRuntimeException {
     private List<EOMCellException> detail = new ArrayList<>();
 
     public EOMBodyException() {
-        super(MESSAGE, null, null);
+        super(MESSAGE, null, CODE, null);
     }
 
     public int countDetail() {

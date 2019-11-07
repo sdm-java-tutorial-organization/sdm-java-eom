@@ -13,7 +13,7 @@ public class EOMWrongDataTypeException extends EOMCellException {
     public static final int CODE = 303;
 
     public EOMWrongDataTypeException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

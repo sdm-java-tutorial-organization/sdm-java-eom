@@ -14,7 +14,7 @@ public class EOMNotNullException extends EOMCellException {
     public static final int CODE = 302;
 
     public EOMNotNullException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

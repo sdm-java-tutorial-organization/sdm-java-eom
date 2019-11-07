@@ -13,7 +13,7 @@ public class EOMNotUniqueException extends EOMCellException {
     public static final int CODE = 305;
 
     public EOMNotUniqueException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

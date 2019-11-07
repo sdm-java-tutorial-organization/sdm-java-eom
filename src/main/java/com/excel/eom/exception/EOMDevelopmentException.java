@@ -8,8 +8,8 @@ import java.util.Map;
 @ToString(callSuper = true)
 public abstract class EOMDevelopmentException extends EOMRuntimeException {
 
-    public EOMDevelopmentException(String message, Throwable cause, Map<String, String> args) {
-        super(message, cause, args);
+    public EOMDevelopmentException(String message, Throwable cause, int code, Map<String, String> args) {
+        super(message, cause, code, args);
     }
 
 }

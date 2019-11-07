@@ -14,7 +14,7 @@ public class EOMWrongUniqueFieldException extends EOMDevelopmentException {
     public static final int CODE = 0;
 
     public EOMWrongUniqueFieldException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

@@ -13,7 +13,7 @@ public class EOMNotContainException extends EOMCellException {
     public static final int CODE = 304;
 
     public EOMNotContainException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

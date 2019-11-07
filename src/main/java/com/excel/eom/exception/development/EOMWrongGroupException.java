@@ -14,7 +14,7 @@ public class EOMWrongGroupException extends EOMDevelopmentException {
     public static final int CODE = 103;
 
     public EOMWrongGroupException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
     /**

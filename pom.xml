@@ -3,9 +3,9 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.excel</groupId>
-    <artifactId>core</artifactId>
-    <version>0.0.1</version>
+    <groupId>com.nexon.mservice</groupId>
+    <artifactId>eom</artifactId>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -14,8 +14,15 @@
         <version>0.0.1</version>
     </parent>
 
-    <dependencies>
+    <distributionManagement>
+        <repository>
+            <id>mservicedev.maven-release</id>
+            <name>M_SERVICE_DEV_MAVEN_RELEASE</name>
+            <url>https://nexus.nexon.com/repository/mservicedev.maven-release/</url>
+        </repository>
+    </distributionManagement>
 
+    <dependencies>
 
         <!-- Excel : A -->
         <dependency>

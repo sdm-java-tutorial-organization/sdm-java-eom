@@ -11,9 +11,10 @@ import java.util.Map;
 public class EOMHeaderException extends EOMRuntimeException {
 
     public static final String MESSAGE = "EOMHeaderException";
+    public static final int CODE = 0;
 
     public EOMHeaderException(Map<String, String> args) {
-        super(MESSAGE, null, args);
+        super(MESSAGE, null, CODE, args);
     }
 
 }
