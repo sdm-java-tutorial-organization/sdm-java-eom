@@ -219,11 +219,13 @@ public class Inventory {
 
 엑셀 내부에 유니크를 보장해야 하는 항목에 대해서 유니크를 검증하는 Validation 작업을 지원합니다.
 
-Excel <-> Object 변환 작업을 우선 진행하고 @UniqueKey or @UniqueKeys 관련 어노테이션을 가지고 있을 때 Unique Validation 작업을 진행합니다.
+Excel <-> Object 변환 작업을 우선 진행하고 @UniqueKey or @UniqueKeys 관련 어노테이션을 가지고 있을 때 
 
-- @UniqueKey
+Unique Validation 작업을 진행합니다.
+
+- `@UniqueKey`
   - values (String[])
-- @UniqueKeys
+- `@UniqueKeys`
   - values (UniqueKey[])
   - objectKeyIndex (int) - default : 0
 
@@ -398,7 +400,8 @@ EOMException
 |	└──EOMCellExceltion
 |		├──EOMNotNullException
 |		├──EOMWrongDataTypeException
-|		└──EOMNotContainException		
+|		├──EOMNotContainException
+|		└──EOMNotUniqueException		
 ```
 
 - `EOMException`(code, message, args)
@@ -424,7 +427,7 @@ EOMException
 |                         | EOMNotNullException             | 302  | Null을 허용하지 않음                                         |
 |                         | EOMWrongDataTypeException       | 303  | 데이터 타입이 올바르지 않음                                  |
 |                         | EOMNotContainException          | 304  | Dropdown에 없는 데이터가 전달                                |
-|                         |                                 |      |                                                              |
+|                         | EOMNotUniqueException           | 305  |                                                              |
 
 
 
@@ -444,3 +447,22 @@ Header에서 발생하는 예외처리는 Object Column 항목과 Excel의 첫 �
 Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 발생하며, 모든 Body 데이터의 확인이 끝난 후에 예외가 있으면 예외를 반환합니다.
 
 또한 내부적으로 `detail(List<EOMCellException>)`항목을 가지고 있기 때문에 Body 데이터 내에 예외 사항을 상세히 확인할 수 있습니다.
+
+
+
+
+
+> PS.
+>
+> - Development Exception 같은 경우는 Compile 단계에서 확인이 가능하다면 Runtime Souce Code를 줄일 수 있습니다.
+>   따라서 Annotation Processing으로 미리 컴파일 에러를 발생시켜 부하를 줄이는 방식으로 빌드업할 예정입니다.
+> - Excel 작업은 메모리 사용이 높은 작업임으로 OutOfMemory에 유의해야합니다. 
+>   따라서 SXSSF를 통해 추가 개발이 필요합니다.
+>   https://qiita.com/tool-taro/items/4b3c802bb114a9110ecb
+> - POI 라이브러리에 의존성이 있는 함수는 모두 Util로 통합하여 개발하였습니다. 
+>   차후 발생할 수 있는 POI 라이브러리 변경에  대응하기 위함입니다.
+>
+> - 메모리 누수가 발생할 수 있는지 성능 튜닝이 필요합니다.
+> - 현재는 Database의 Relation을 역정규화를 통해 하나의 Object에서만 표현할 수 있습니다.
+>   이후에 독립적으로 존재하는 N개의 Object를 조합해서 Excel로 표현하는 기법 또한 빌드업할 예정입니다. (Major Update)
+

@@ -171,7 +171,7 @@ public class ExcelObjectMapper {
                 checkHeader(hRow);
 
                 // [b]ody - bodyException
-                EOMBodyException bodyException = new EOMBodyException(items);
+                EOMBodyException bodyException = new EOMBodyException(/*items*/);
                 Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
                 for (int i = 1; i < sheetHeight; i++) {
                     // empty valid
@@ -202,9 +202,11 @@ public class ExcelObjectMapper {
             try {
                 Object instance = this.clazz.newInstance();
             } catch (InstantiationException e) {
-                throw new EOMObjectException(String.format("check your %s class. Can't create instance.", clazz.getSimpleName()));
+                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName());
+                throw new EOMObjectException(args);
             } catch (IllegalAccessException e) {
-                throw new EOMObjectException(String.format("check your %s class. Can't create instance.", clazz.getSimpleName()));
+                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName());
+                throw new EOMObjectException(args);
             }
 
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
@@ -250,7 +252,8 @@ public class ExcelObjectMapper {
                 preIndex = columnElement.getIndex();
             } else {
                 if (preIndex + 1 != columnElement.getIndex()) {
-                    throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn index option", clazz.getSimpleName()));
+                    Map<String, String> args = EOMWrongIndexException.getArguments(clazz.getSimpleName(), columnElement.getIndex());
+                    throw new EOMWrongIndexException(args);
                 }
                 preIndex = columnElement.getIndex();
             }
@@ -263,7 +266,8 @@ public class ExcelObjectMapper {
                     preGroup = columnElement.getGroup();
                     /*columnElement.setNullable(false);*/
                 } else if (preGroup < columnElement.getGroup()) {
-                    throw new EOMWrongIndexException(String.format("check your %s class @ExcelColumn group option", clazz.getSimpleName()));
+                    Map<String, String> args = EOMWrongGroupException.getArguments(clazz.getSimpleName(), columnElement.getGroup());
+                    throw new EOMWrongGroupException(args);
                 }
             }
         }
@@ -391,7 +395,8 @@ public class ExcelObjectMapper {
                 // nullable
                 if (fieldInfo.getNullable() == false) {
                     if (cellValue == null || cellValue.equals("")) {
-                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), fieldInfo.getIndex());
+                        Map<String, String> args = EOMNotNullException.getArguments(row.getRowNum(), fieldInfo.getIndex());
+                        EOMNotNullException e = new EOMNotNullException(args);
                         bodyException.addDetail(e);
                     }
                 }
@@ -399,7 +404,8 @@ public class ExcelObjectMapper {
                 // dropdown - satic
                 if (field.getType().isEnum()) {
                     if (cellValue == null) {
-                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
+                        Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                        EOMNotContainException e = new EOMNotContainException(args);
                         bodyException.addDetail(e);
                     }
                 }
@@ -418,7 +424,8 @@ public class ExcelObjectMapper {
                         }
                     }
                     if (isContain == false) {
-                        EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
+                        Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                        EOMNotContainException e = new EOMNotContainException(args);
                         bodyException.addDetail(e);
                     }
                 }
@@ -599,7 +606,7 @@ public class ExcelObjectMapper {
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
                 if (fieldInfo.getName().equals(cellValue) == false) {
                     // * THROW WRONG_HEADER_EXCEPTION
-                    throw new EOMHeaderException();
+                    throw new EOMHeaderException(null);
                 }
             }
         });
@@ -649,7 +656,8 @@ public class ExcelObjectMapper {
                 // nullable
                 if (fieldInfo.getNullable() == false) {
                     if (cellValue == null || cellValue.equals("")) {
-                        EOMNotNullException e = new EOMNotNullException(row.getRowNum(), fieldInfo.getIndex());
+                        Map<String, String> args = EOMNotNullException.getArguments(row.getRowNum(), fieldInfo.getIndex());
+                        EOMNotNullException e = new EOMNotNullException(args);
                         bodyException.addDetail(e);
                         return;
                     }
@@ -672,7 +680,8 @@ public class ExcelObjectMapper {
                             if (fieldInfo.getNullable() && (cellValue == null || cellValue.equals(""))) {
                                 cellValue = null;
                             } else {
-                                EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
+                                Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                                EOMNotContainException e = new EOMNotContainException(args);
                                 bodyException.addDetail(e);
                                 return;
                             }
@@ -693,7 +702,8 @@ public class ExcelObjectMapper {
                         if (fieldInfo.getNullable()) {
                             cellValue = null;
                         } else {
-                            EOMNotContainException e = new EOMNotContainException(row.getRowNum(), fieldInfo.getIndex());
+                            Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                            EOMNotContainException e = new EOMNotContainException(args);
                             bodyException.addDetail(e);
                             return;
                         }
@@ -727,10 +737,12 @@ public class ExcelObjectMapper {
                     }
                     field.set(copyInstance, cellValue);
                 } catch (IllegalAccessException e) {
-                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), fieldInfo.getIndex());
+                    Map<String, String> args = EOMWrongDataTypeException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(args);
                     bodyException.addDetail(wrongDataTypeException);
                 } catch (IllegalArgumentException e) {
-                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(e, row.getRowNum(), fieldInfo.getIndex());
+                    Map<String, String> args = EOMWrongDataTypeException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
+                    EOMWrongDataTypeException wrongDataTypeException = new EOMWrongDataTypeException(args);
                     bodyException.addDetail(wrongDataTypeException);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -758,7 +770,8 @@ public class ExcelObjectMapper {
         Field[] fields = clazz.getDeclaredFields();
         boolean validateResult = UniqueKeyUtil.validateField(fields, uniqueKeys);
         if (validateResult == false) {
-            throw new EOMWrongUniqueFieldException();
+            Map<String, String> args = EOMWrongUniqueFieldException.getArguments(UniqueKeyUtil.getWrongField(fields, uniqueKeys));
+            throw new EOMWrongUniqueFieldException(args);
         }
 
         // init <>
@@ -805,11 +818,12 @@ public class ExcelObjectMapper {
                                     return "";
                                 }
                             })
-                            .reduce((a, b) -> a + "__" + b)
+                            .reduce((a, b) -> a + "&&" + b)
                             .get();
                     if (uniqueValueStorage.contains(result + "")) {
                         // TODO need to column guide
-                        EOMNotUniqueException e = new EOMNotUniqueException();
+                        Map<String, String> args = EOMNotUniqueException.getArguments(result, i);
+                        EOMNotUniqueException e = new EOMNotUniqueException(args);
                         bodyException.addDetail(e);
                     } else {
                         uniqueValueStorage.add(result + "");

@@ -1,31 +1,33 @@
 package com.excel.eom.exception.body;
 
-import com.excel.eom.exception.EOMBodyException;
-import com.excel.eom.exception.EOMRuntimeException;
 
+import lombok.Data;
+import lombok.ToString;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ToString(callSuper = true)
 public class EOMNotNullException extends EOMCellException {
 
     public static final String MESSAGE = "Do not allow null(empty).";
-    public static final int CODE = 201;
+    public static final int CODE = 302;
 
-    public EOMNotNullException() {
-        super();
+    public EOMNotNullException(Map<String, String> args) {
+        super(MESSAGE, null, args);
     }
 
-    public EOMNotNullException(String message) {
-        super(message);
-    }
-
-    public EOMNotNullException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public EOMNotNullException(Throwable cause) {
-        super(cause);
-    }
-
-    public EOMNotNullException(int row, int column, String... args) {
-        super(MESSAGE, CODE, row, column, args);
+    /**
+     * getArguments
+     *
+     * @param row
+     * @param column
+     * */
+    public static Map getArguments(int row, int column) {
+        Map<String, String> args = new HashMap<>();
+        args.put("row", row + "");
+        args.put("column", column + "");
+        return args;
     }
 
 }

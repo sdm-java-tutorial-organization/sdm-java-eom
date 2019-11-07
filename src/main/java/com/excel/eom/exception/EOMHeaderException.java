@@ -1,30 +1,19 @@
 package com.excel.eom.exception;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-@Data
+@ToString(callSuper = true)
 public class EOMHeaderException extends EOMRuntimeException {
 
-    public String message;
-    private List<EOMHeaderException> detail = new ArrayList<>();
+    public static final String MESSAGE = "EOMHeaderException";
 
-    public EOMHeaderException() {
-        super();
-    }
-
-    public EOMHeaderException(Throwable cause) {
-        super(cause);
-    }
-
-    public int countDetail() {
-        return detail.size();
-    }
-
-    public void addDetail(EOMHeaderException e) {
-        detail.add(e);
+    public EOMHeaderException(Map<String, String> args) {
+        super(MESSAGE, null, args);
     }
 
 }

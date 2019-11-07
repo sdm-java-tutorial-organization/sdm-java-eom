@@ -3,14 +3,32 @@ package com.excel.eom.exception.development;
 import com.excel.eom.exception.EOMDevelopmentException;
 import com.excel.eom.exception.EOMRuntimeException;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@ToString(callSuper = true)
 public class EOMObjectException extends EOMDevelopmentException {
 
-    public EOMObjectException(String message) {
-        super(message);
+    public static final String MESSAGE = "The Excel Object is invalid.";
+    public static final int CODE = 101;
+
+    public EOMObjectException(Map<String, String> args) {
+        super(MESSAGE, null, args);
+    }
+
+    /**
+     * getArguments
+     *
+     * @param className
+     * */
+    public static Map getArguments(String className) {
+        Map<String, String> args = new HashMap<>();
+        args.put("class", className);
+        return args;
     }
 
 }

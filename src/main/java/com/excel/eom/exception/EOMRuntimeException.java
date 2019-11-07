@@ -1,21 +1,19 @@
 package com.excel.eom.exception;
 
+import lombok.ToString;
+
+import java.util.Map;
+
+@ToString
 public class EOMRuntimeException extends RuntimeException {
 
-    public EOMRuntimeException() {
-        super();
-    }
+    public Map<String, String> args;
+    private String message;
 
-    public EOMRuntimeException(String message) {
-        super(message);
-    }
-
-    public EOMRuntimeException(String message, Throwable cause) {
+    public EOMRuntimeException(String message, Throwable cause, Map<String, String> args) {
         super(message, cause);
-    }
-
-    public EOMRuntimeException(Throwable cause) {
-        super(cause);
+        this.message = message;
+        this.args = args;
     }
 
 }

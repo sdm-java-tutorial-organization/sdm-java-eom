@@ -98,8 +98,7 @@ public class ExcelObjectMapperTest {
                     .buildObject(items);
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
         }
         ExcelSheetUtil.print(sheet);
@@ -118,10 +117,8 @@ public class ExcelObjectMapperTest {
                     .buildSheet();
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
-            items = e.getObjects();
         }
         items.stream().forEach(item -> {
             System.out.println(item.toString());
@@ -179,8 +176,7 @@ public class ExcelObjectMapperTest {
                     .buildObject(items);
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
         }
         ExcelSheetUtil.print(sheet);
@@ -201,10 +197,8 @@ public class ExcelObjectMapperTest {
                     .buildSheet();
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
-            items = e.getObjects();
         }
         items.stream().forEach(item -> {
             System.out.println(item.toString());
@@ -281,8 +275,7 @@ public class ExcelObjectMapperTest {
                     .buildObject(items);
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
         }
         ExcelSheetUtil.print(sheet);
@@ -307,10 +300,8 @@ public class ExcelObjectMapperTest {
                     .buildSheet();
         } catch (EOMBodyException e) {
             for(EOMCellException detail : e.getDetail()) {
-                System.out.println(detail.toString());
-                System.out.println(detail.getMessage() + " " + String.format("(x, y) = (%d, %d)", detail.getColumn(), detail.getRow()));
+                detail.printStackTrace();
             }
-            items = e.getObjects();
         }
         items.stream().forEach(item -> {
             System.out.println(item.toString());

@@ -1,23 +1,15 @@
 package com.excel.eom.exception;
 
+import lombok.Data;
+import lombok.ToString;
+
+import java.util.Map;
+
+@ToString(callSuper = true)
 public abstract class EOMDevelopmentException extends EOMRuntimeException {
 
-    public static final String TYPE = "DEV";
-
-    public EOMDevelopmentException() {
-        super();
-    }
-
-    public EOMDevelopmentException(String message) {
-        super(message);
-    }
-
-    public EOMDevelopmentException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public EOMDevelopmentException(Throwable cause) {
-        super(cause);
+    public EOMDevelopmentException(String message, Throwable cause, Map<String, String> args) {
+        super(message, cause, args);
     }
 
 }

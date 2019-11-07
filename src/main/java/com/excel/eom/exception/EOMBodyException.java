@@ -3,40 +3,23 @@ package com.excel.eom.exception;
 import com.excel.eom.exception.body.EOMCellException;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-@Data
+@ToString(callSuper = true)
+@Getter
 public class EOMBodyException extends EOMRuntimeException {
 
-    public String message;
+    public static final String MESSAGE = "There is an error in the Excel content. Please check the detail.";
+    public static final int CODE = 0;
 
-    @Getter
-    private List objects;
     private List<EOMCellException> detail = new ArrayList<>();
 
     public EOMBodyException() {
-        super();
-    }
-
-    public EOMBodyException(String message) {
-        super(message);
-    }
-
-    public EOMBodyException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public EOMBodyException(Throwable cause) {
-        super(cause);
-    }
-
-    public EOMBodyException(List objects) {
-        super();
-        this.objects = objects;
+        super(MESSAGE, null, null);
     }
 
     public int countDetail() {

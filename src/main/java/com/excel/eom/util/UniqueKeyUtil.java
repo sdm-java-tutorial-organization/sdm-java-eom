@@ -42,6 +42,8 @@ public class UniqueKeyUtil {
     /**
      * validateField
      *
+     * @param fields
+     * @param uniqueKeys
      * */
     public static boolean validateField(Field[] fields, List<List<String>> uniqueKeys) {
         List<String> fieldNames = Arrays.stream(fields)
@@ -54,6 +56,25 @@ public class UniqueKeyUtil {
             }
         }
         return true;
+    }
+
+    /**
+     * getWrongField
+     *
+     * @param fields
+     * @param uniqueKeys
+     * */
+    public static String getWrongField(Field[] fields, List<List<String>> uniqueKeys) {
+        List<String> fieldNames = Arrays.stream(fields)
+                .map(field-> field.getName()).collect(Collectors.toList());
+        for(List<String> uniqueKey : uniqueKeys) {
+            for(String field : uniqueKey) {
+                if(fieldNames.indexOf(field) < 0) {
+                    return field;
+                }
+            }
+        }
+        return null;
     }
 
     /**

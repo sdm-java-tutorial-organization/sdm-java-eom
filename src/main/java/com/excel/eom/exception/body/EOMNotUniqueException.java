@@ -1,28 +1,32 @@
 package com.excel.eom.exception.body;
 
+import lombok.Data;
+import lombok.ToString;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@ToString(callSuper = true)
 public class EOMNotUniqueException extends EOMCellException {
 
-    public static final String MESSAGE = "Not Unique.";
-    public static final int CODE = 201;
+    public static final String MESSAGE = "There is a non-unique value in a unique field.";
+    public static final int CODE = 305;
 
-    public EOMNotUniqueException() {
-        super();
+    public EOMNotUniqueException(Map<String, String> args) {
+        super(MESSAGE, null, args);
     }
 
-    public EOMNotUniqueException(String message) {
-        super(message);
-    }
-
-    public EOMNotUniqueException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public EOMNotUniqueException(Throwable cause) {
-        super(cause);
-    }
-
-    public EOMNotUniqueException(Throwable cause, int row, int column, String... args) {
-        super(MESSAGE, cause, CODE, row, column, args);
+    /**
+     * getArguments
+     *
+     * @param value
+     * @param row
+     * */
+    public static Map getArguments(Object value, int row) {
+        Map<String, String> args = new HashMap<>();
+        args.put("unique", value + "");
+        args.put("row", row + "");
+        return args;
     }
 
 }
