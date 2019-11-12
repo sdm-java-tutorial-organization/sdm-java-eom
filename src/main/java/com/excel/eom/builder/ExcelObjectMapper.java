@@ -34,12 +34,11 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ExcelObjectMapper {
+public class ExcelObjectMapper implements ExcelBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
 
     private Class<?> clazz;
-    private boolean isSXSSF = false;
     private Workbook book;
     private Sheet sheet;
     private DataValidationHelper dvHelper;
@@ -77,9 +76,6 @@ public class ExcelObjectMapper {
      * @param book
      */
     public ExcelObjectMapper initBook(Workbook book) {
-        if(book.getClass().getSimpleName().equals(SXSSFWorkbook.class.getSimpleName())) {
-            isSXSSF = true;
-        }
         this.book = book;
         return this;
     }
@@ -205,10 +201,10 @@ public class ExcelObjectMapper {
             try {
                 Object instance = this.clazz.newInstance();
             } catch (InstantiationException e) {
-                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName());
+                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName(), e.getMessage());
                 throw new EOMObjectException(args);
             } catch (IllegalAccessException e) {
-                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName());
+                Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName(), e.getMessage());
                 throw new EOMObjectException(args);
             }
 
@@ -225,7 +221,7 @@ public class ExcelObjectMapper {
                                          Integer width,
                                          Short alignment,
                                          IndexedColors cellColor,
-                                         BorderStyle borderStyle,
+                                         short borderStyle,
                                          IndexedColors borderColor) {
                     fieldInfoMap.put(field, new FieldInfo(name, index, group, dropdown, nullable));
                 }
@@ -292,31 +288,28 @@ public class ExcelObjectMapper {
                                          Integer width,
                                          Short alignment,
                                          IndexedColors cellColor,
-                                         BorderStyle borderStyle,
+                                         short borderStyle,
                                          IndexedColors borderColor) {
                     // init width (sheet)
                     sheet.setColumnWidth(index, width * 100 * 3);
 
                     // init static dropdown (sheet)
                     if (field.getType().isEnum()) {
-                        if (dvHelper == null && isSXSSF == false) {
-                            XSSFSheet xssfSheet = (XSSFSheet) sheet;
-                            dvHelper = new XSSFDataValidationHelper(xssfSheet);
+                        if (dvHelper == null) {
+                            dvHelper = sheet.getDataValidationHelper();
+                            Object[] enums = field.getType().getEnumConstants();
+                            List<String> items = new ArrayList<>();
+                            for (Object e : enums) {
+                                items.add(e.toString());
+                            }
+                            fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                         }
-
-                        Object[] enums = field.getType().getEnumConstants();
-                        List<String> items = new ArrayList<>();
-                        for (Object e : enums) {
-                            items.add(e.toString());
-                        }
-                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
 
                     // init dynamic dropdown (sheet)
-                    if (dropdown.equals("") == false && isSXSSF == false) {
+                    if (dropdown.equals("") == false) {
                         if (dvHelper == null) {
-                            XSSFSheet xssfSheet = (XSSFSheet) sheet;
-                            dvHelper = new XSSFDataValidationHelper(xssfSheet);
+                            dvHelper = sheet.getDataValidationHelper();
                         }
                         // TODO null check and exception
                         Map<String, Object> option = options.get(dropdown);
@@ -325,9 +318,8 @@ public class ExcelObjectMapper {
                     }
 
                     // init style (book)
-                    if (book != null && isSXSSF == false) {
-                        XSSFWorkbook xssfWorkbook = (XSSFWorkbook) book;
-                        XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(xssfWorkbook);
+                    if (book != null) {
+                        CellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
                         ExcelCellUtil.setCellColor(cellStyle, cellColor);
                         ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
                         ExcelCellUtil.setAlignment(cellStyle, alignment);
@@ -348,33 +340,30 @@ public class ExcelObjectMapper {
             @Override
             public void getClassInfo(String name,
                                      IndexedColors cellColor,
-                                     BorderStyle borderStyle,
+                                     short borderStyle,
                                      IndexedColors borderColor,
                                      int fixedRowCount,
                                      int fixedColumnCount) {
-                if(isSXSSF == false) {
-                    XSSFWorkbook xssfWorkbook = (XSSFWorkbook) book;
-                    XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(xssfWorkbook);
-                    XSSFFont font = ExcelCellUtil.getFont(xssfWorkbook);
+                CellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                XSSFFont font = (XSSFFont) ExcelCellUtil.getFont(book);
 
-                    // style - static
-                    font.setBold(true);
-                    ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
-                    ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
-                    ExcelCellUtil.setFont(cellStyle, font);
+                // style - static
+                font.setBold(true);
+                ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
+                ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
+                ExcelCellUtil.setFont(cellStyle, font);
 
-                    // style - dynamic
-                    ExcelCellUtil.setCellColor(cellStyle, cellColor);
-                    ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                // style - dynamic
+                ExcelCellUtil.setCellColor(cellStyle, cellColor);
+                ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
 
-                    FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
-                        @Override
-                        public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                            Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
-                            ExcelCellUtil.setCellStyle(cell, cellStyle);
-                        }
-                    });
-                }
+                FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
+                    @Override
+                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                        Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                        ExcelCellUtil.setCellStyle(cell, cellStyle);
+                    }
+                });
 
                 FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
                     @Override

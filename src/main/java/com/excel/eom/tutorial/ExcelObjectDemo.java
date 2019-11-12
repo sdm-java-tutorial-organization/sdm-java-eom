@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 
 @Data
@@ -16,7 +17,7 @@ import org.apache.poi.ss.usermodel.IndexedColors;
         name = "EOM",
         cellColor = IndexedColors.YELLOW,
         borderColor = IndexedColors.BLACK,
-        borderStyle = BorderStyle.THIN)
+        borderStyle = CellStyle.BORDER_THIN)
 public class ExcelObjectDemo {
 
     // TODO index 같을 경우

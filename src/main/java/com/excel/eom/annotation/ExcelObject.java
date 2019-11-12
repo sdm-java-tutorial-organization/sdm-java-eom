@@ -1,7 +1,6 @@
 package com.excel.eom.annotation;
 
-import com.excel.eom.constant.ExcelColor;
-import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 
 import java.lang.annotation.ElementType;
@@ -28,7 +27,7 @@ public @interface ExcelObject {
 
     IndexedColors cellColor() default IndexedColors.YELLOW;
 
-    BorderStyle borderStyle() default BorderStyle.THIN;
+    short borderStyle() default CellStyle.BORDER_THIN;
 
     IndexedColors borderColor() default IndexedColors.BLACK;
 

@@ -13,12 +13,8 @@ import com.excel.eom.util.ExcelSheetUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -31,15 +27,15 @@ import static org.junit.Assert.assertEquals;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING) // 사전식순서 (a_, b_, c_, ...)
 public class ExcelObjectMapperTest {
 
-    static Workbook book;
-    static Workbook bookNullable;
-    static Workbook bookDropdown;
-    static Workbook bookDropdownNotContain;
-    static Workbook bookDynamicDropdown;
-    static Workbook bookGroupA;
-    static Workbook bookGroupB;
-
     static String DEPLOY_BASIC = "src/main/resources/deploy/deploy_basic.xlsx";
+    static String DEPLOY_NULLABLE = "src/main/resources/deploy/deploy_nullable.xlsx";
+    static String DEPLOY_DROPDOWN = "src/main/resources/deploy/deploy_dropdown.xlsx";
+    static String DEPLOY_DROPDOWN_DYNAMIC = "src/main/resources/deploy/deploy_dropdown_dynamic.xlsx";
+    static String DEPLOY_THROW_NONCONTAIN = "src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx";
+    static String DEPLOY_THROW_NONCONTAIN_DYNAMIC = "src/main/resources/deploy/deploy_dropdown_dynamic_throw_notContain.xlsx";
+    static String DEPLOY_GROUP_2 = "src/main/resources/deploy/deploy_group_2.xlsx";
+    static String DEPLOY_GROUP_2_THROW = "src/main/resources/deploy/deploy_group_2_throw.xlsx";
+
 
     @Test
     public void a_buildObject() throws Throwable {
@@ -48,7 +44,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectBasic("nameB", 2),
                 new ExcelObjectBasic("nameC", 3)
         );
-        book = new XSSFWorkbook();
+        Workbook book = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectBasic.class)
@@ -61,7 +57,9 @@ public class ExcelObjectMapperTest {
 
     @Test
     public void b_buildSheet() throws Throwable {
+        Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_BASIC));
         Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
+        ExcelSheetUtil.print(sheet);
         List<ExcelObjectBasic> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectBasic.class)
                 .initBook(book)
@@ -81,7 +79,8 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectBasic(null, 4),
                 new ExcelObjectBasic("nameE", 5)
         );
-        bookNullable = new XSSFWorkbook();
+
+        Workbook bookNullable = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookNullable, "sheet");
         try {
             ExcelObjectMapper.init()
@@ -93,17 +92,18 @@ public class ExcelObjectMapperTest {
             e.printStackTrace();
         }
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookNullable, "src/main/resources/deploy/deploy_nullable.xlsx");
+        ExcelFileUtil.writeExcel(bookNullable, DEPLOY_NULLABLE);
     }
 
     @Test
     public void b_buildSheetThrowNullable() throws Throwable {
-        Sheet sheet = ExcelSheetUtil.getSheet(bookNullable, 0);
+        Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_NULLABLE));
+        Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
         List<ExcelObjectBasic> items = null;
         try {
             items = ExcelObjectMapper.init()
                     .initModel(ExcelObjectBasic.class)
-                    .initBook(bookNullable)
+                    .initBook(book)
                     .initSheet(sheet)
                     .buildSheet();
 
@@ -122,7 +122,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectDropdown("nameB", 2, Planet.Earth),
                 new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
         );
-        bookDropdown = new XSSFWorkbook();
+        Workbook bookDropdown = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDropdown, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectDropdown.class)
@@ -130,13 +130,12 @@ public class ExcelObjectMapperTest {
                 .initSheet(sheet)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookDropdown, "src/main/resources/deploy/deploy_dropdown.xlsx");
+        ExcelFileUtil.writeExcel(bookDropdown, DEPLOY_DROPDOWN);
     }
 
     @Test
     public void b_buildSheetWithDropdown() throws Throwable {
-        Workbook bookDropdown = ExcelFileUtil.getXSSFWorkbookByFile(
-                new File("src/main/resources/deploy/deploy_dropdown.xlsx"));
+        Workbook bookDropdown = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_DROPDOWN));
         Sheet sheet = ExcelSheetUtil.getSheet(bookDropdown, 0);
         List<ExcelObjectDropdown> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectDropdown.class)
@@ -156,7 +155,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
         );
 
-        bookDropdownNotContain = new XSSFWorkbook();
+        Workbook bookDropdownNotContain = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDropdownNotContain, "sheet");
         try {
             ExcelObjectMapper.init()
@@ -170,13 +169,12 @@ public class ExcelObjectMapperTest {
             }
         }
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookDropdownNotContain, "src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx");
+        ExcelFileUtil.writeExcel(bookDropdownNotContain, DEPLOY_THROW_NONCONTAIN);
     }
 
     @Test
     public void b_buildSheetWithDropdownThrowNotContain() throws Throwable {
-        Workbook bookDropdownNotContain = ExcelFileUtil.getXSSFWorkbookByFile(
-                new File("src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx"));
+        Workbook bookDropdownNotContain = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_THROW_NONCONTAIN));
         Sheet sheet = ExcelSheetUtil.getSheet(bookDropdownNotContain, 0);
         List<ExcelObjectDropdown> items = null;
         try {
@@ -207,7 +205,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectDynamicDropdown("nameB", 2, "b"),
                 new ExcelObjectDynamicDropdown("nameC", 3, "c")
         );
-        bookDynamicDropdown = new XSSFWorkbook();
+        Workbook bookDynamicDropdown = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDynamicDropdown, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectDynamicDropdown.class)
@@ -216,13 +214,12 @@ public class ExcelObjectMapperTest {
                 .initDropDowns(dropdown)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookDynamicDropdown, "src/main/resources/deploy/deploy_dropdown_dynamic.xlsx");
+        ExcelFileUtil.writeExcel(bookDynamicDropdown, DEPLOY_DROPDOWN_DYNAMIC);
     }
 
     @Test
     public void b_buildSheetWithDynamicDropdown() throws Throwable {
-        Workbook bookDynamicDropdown = ExcelFileUtil.getXSSFWorkbookByFile(
-                new File("src/main/resources/deploy/deploy_dropdown_dynamic.xlsx"));
+        Workbook bookDynamicDropdown = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_DROPDOWN_DYNAMIC));
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
@@ -254,7 +251,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectDynamicDropdown("nameB", 2, "e"),
                 new ExcelObjectDynamicDropdown("nameC", 3, "f")
         );
-        bookDynamicDropdown = new XSSFWorkbook();
+        Workbook bookDynamicDropdown = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDynamicDropdown, "sheet");
         try {
             ExcelObjectMapper.init()
@@ -269,7 +266,7 @@ public class ExcelObjectMapperTest {
             }
         }
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookDynamicDropdown, "src/main/resources/deploy/deploy_dropdown_dynamic_throw_notContain.xlsx");
+        ExcelFileUtil.writeExcel(bookDynamicDropdown, DEPLOY_THROW_NONCONTAIN_DYNAMIC);
     }
 
     @Test
@@ -279,6 +276,7 @@ public class ExcelObjectMapperTest {
         optionMap.put("banana", "b");
         optionMap.put("cherry", "c");
         Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
+        Workbook bookDynamicDropdown = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_THROW_NONCONTAIN_DYNAMIC));
         Sheet sheet = ExcelSheetUtil.getSheet(bookDynamicDropdown, 0);
         List<ExcelObjectDynamicDropdown> items = null;
         try {
@@ -314,7 +312,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
                 new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
         );
-        bookGroupA = new XSSFWorkbook();
+        Workbook bookGroupA = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookGroupA, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectTwoDepth.class)
@@ -322,7 +320,7 @@ public class ExcelObjectMapperTest {
                 .initSheet(sheet)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookGroupA, "src/main/resources/deploy/deploy_group_2.xlsx");
+        ExcelFileUtil.writeExcel(bookGroupA, DEPLOY_GROUP_2);
     }
 
     @Test
@@ -340,7 +338,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectTwoDepth("C", "catNameA", "nameJ", 10),
                 new ExcelObjectTwoDepth("C", "catNameA", "nameK", 11)
         );
-        bookGroupA = new XSSFWorkbook();
+        Workbook bookGroupA = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookGroupA, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectTwoDepth.class)
@@ -348,13 +346,12 @@ public class ExcelObjectMapperTest {
                 .initSheet(sheet)
                 .buildObject(items);
         ExcelSheetUtil.print(sheet);
-        ExcelFileUtil.writeExcel(bookGroupA, "src/main/resources/deploy/deploy_group_2_throw.xlsx");
+        ExcelFileUtil.writeExcel(bookGroupA, DEPLOY_GROUP_2_THROW);
     }
 
     @Test
     public void b_buildSheetWithTwoDepth() throws Throwable {
-        Workbook bookGroupA = ExcelFileUtil.getXSSFWorkbookByFile(
-                new File("src/main/resources/deploy/deploy_group_2.xlsx"));
+        Workbook bookGroupA = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_GROUP_2_THROW));
         Sheet sheet = ExcelSheetUtil.getSheet(bookGroupA, 0);
         List<ExcelObjectTwoDepth> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectTwoDepth.class)
@@ -384,7 +381,7 @@ public class ExcelObjectMapperTest {
                 new ExcelObjectThreeDepth("C", "GroupA", "B`","nameL", 12)
         );
 
-        XSSFWorkbook book = new XSSFWorkbook();
+        Workbook book = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectThreeDepth.class)
@@ -397,8 +394,7 @@ public class ExcelObjectMapperTest {
 
     @Test
     public void b_buildSheetWithThreeDepth() throws Throwable {
-        Workbook bookGroupB = ExcelFileUtil.getXSSFWorkbookByFile(
-                new File("src/main/resources/deploy/deploy_group_3.xlsx"));
+        Workbook bookGroupB = ExcelFileUtil.getXSSFWorkbookByFile(new File("src/main/resources/deploy/deploy_group_3.xlsx"));
         Sheet sheet = ExcelSheetUtil.getSheet(bookGroupB, 0);
         List<ExcelObjectThreeDepth> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectThreeDepth.class)
@@ -418,7 +414,7 @@ public class ExcelObjectMapperTest {
             items.add(new ExcelObjectBasic("name" + i, i));
         }
         long beforeTime = System.nanoTime();
-        book = new XSSFWorkbook();
+        Workbook book = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectBasic.class)
@@ -436,7 +432,7 @@ public class ExcelObjectMapperTest {
             items.add(new ExcelObjectBasic("name" + i, i));
         }
         long beforeTime = System.nanoTime();
-        book = new SXSSFWorkbook();
+        Workbook book = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
         ExcelObjectMapper.init()
                 .initModel(ExcelObjectBasic.class)
@@ -445,6 +441,8 @@ public class ExcelObjectMapperTest {
                 .buildObject(items);
         long afterTime = System.nanoTime();
         System.out.println(afterTime - beforeTime);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(book, "src/main/resources/deploy/deploy_sxssf.xlsx");
     }
 
     @Data
@@ -454,7 +452,7 @@ public class ExcelObjectMapperTest {
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
-            borderStyle = BorderStyle.THIN)
+            borderStyle = CellStyle.BORDER_THIN)
     @UniqueKey("name")
     public static class ExcelObjectBasic {
 
@@ -473,7 +471,7 @@ public class ExcelObjectMapperTest {
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
-            borderStyle = BorderStyle.THIN)
+            borderStyle = CellStyle.BORDER_THIN)
     @UniqueKey({"name", "planet"})
     public static class ExcelObjectDropdown {
 
@@ -495,7 +493,7 @@ public class ExcelObjectMapperTest {
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
-            borderStyle = BorderStyle.THIN)
+            borderStyle = CellStyle.BORDER_THIN)
     @UniqueKeys({
             @UniqueKey("name"),
             @UniqueKey("count")
@@ -520,7 +518,7 @@ public class ExcelObjectMapperTest {
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
-            borderStyle = BorderStyle.THIN)
+            borderStyle = CellStyle.BORDER_THIN)
     public static class ExcelObjectTwoDepth {
 
         @ExcelColumn(name = "CAT", group = 1, index = 0)
@@ -544,7 +542,7 @@ public class ExcelObjectMapperTest {
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
             borderColor = IndexedColors.BLACK,
-            borderStyle = BorderStyle.THIN)
+            borderStyle = CellStyle.BORDER_THIN)
     public static class ExcelObjectThreeDepth {
 
         @ExcelColumn(name = "PARENT", group = 2, index = 0, cellColor = IndexedColors.GREY_50_PERCENT)

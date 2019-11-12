@@ -46,7 +46,7 @@ public @interface ExcelColumn {
 
     IndexedColors cellColor() default IndexedColors.WHITE;
 
-    BorderStyle borderStyle() default BorderStyle.THIN;
+    short borderStyle() default CellStyle.BORDER_THIN;
 
     IndexedColors borderColor() default IndexedColors.BLACK;
 

@@ -24,10 +24,12 @@ public class EOMObjectException extends EOMDevelopmentException {
      * getArguments
      *
      * @param className
+     * @param exception
      * */
-    public static Map getArguments(String className) {
+    public static Map getArguments(String className, String exception) {
         Map<String, String> args = new HashMap<>();
         args.put("class", className);
+        args.put("exception", exception);
         return args;
     }
 

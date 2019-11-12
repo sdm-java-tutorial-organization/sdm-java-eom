@@ -1,5 +1,6 @@
 package com.excel.eom.util;
 
+import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
@@ -130,7 +131,7 @@ public class ExcelCellUtil {
      *
      * @param book
      * */
-    public static XSSFCellStyle getCellStyle(XSSFWorkbook book) {
+    public static CellStyle getCellStyle(Workbook book) {
         return book.createCellStyle();
     }
 
@@ -172,7 +173,7 @@ public class ExcelCellUtil {
      * @param borderStyle
      * @param borderColor
      * */
-    public static void setCellBorder(XSSFCellStyle cellStyle, BorderStyle borderStyle, IndexedColors borderColor) {
+    public static void setCellBorder(CellStyle cellStyle, short borderStyle, IndexedColors borderColor) {
         cellStyle.setBorderBottom(borderStyle);
         cellStyle.setBottomBorderColor(borderColor.getIndex());
         cellStyle.setBorderLeft(borderStyle);
@@ -188,7 +189,7 @@ public class ExcelCellUtil {
      *
      * @param book
      * */
-    public static XSSFFont getFont(XSSFWorkbook book) {
+    public static Font getFont(Workbook book) {
         return book.createFont();
     }
 

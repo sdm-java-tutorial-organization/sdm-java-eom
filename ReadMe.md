@@ -381,6 +381,36 @@ ExcelObjectMapper.init()
 
 
 
+### XSSF vs SXSSF
+
+XSSF는 CellStyle을 지원하나 SXSSF에 비해 약 10배 정도 속도가 느립니다.
+
+따라서 필요에 따라 적절한 구현체를 사용해야 합니다. 
+
+
+
+XSSFWorkbook
+
+```java
+XSSFWorkbook book = new XSSFWorkbook();
+Sheet sheet = book.createSheet("sheetName");
+ExcelObjectMapper.init()
+    .initModel(Inventory.class)
+    .initBook(book)
+    .initSheet(sheet)
+    .buildObject();
+```
+
+
+
+SXSSFWorkbook
+
+```java
+
+```
+
+
+
 ## Exception
 
 

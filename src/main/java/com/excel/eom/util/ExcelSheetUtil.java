@@ -72,7 +72,7 @@ public class ExcelSheetUtil {
      * @param index
      */
     public static Sheet getSheet(Workbook book,
-                                     int index) {
+                                 int index) {
         return book.getSheetAt(index);
     }
 

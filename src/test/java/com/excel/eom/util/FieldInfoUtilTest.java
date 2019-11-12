@@ -53,7 +53,7 @@ public class FieldInfoUtilTest {
                                      Integer width,
                                      Short alignment,
                                      IndexedColors cellColor,
-                                     BorderStyle borderStyle,
+                                     short borderStyle,
                                      IndexedColors borderColor) {
                 elements.put(field, new FieldInfo(name, index, group, dropdown));
             }
@@ -74,7 +74,7 @@ public class FieldInfoUtilTest {
                                      Integer width,
                                      Short alignment,
                                      IndexedColors cellColor,
-                                     BorderStyle borderStyle,
+                                     short borderStyle,
                                      IndexedColors borderColor) {
                 elements.put(field, new FieldInfo(name, index, group, dropdown));
             }

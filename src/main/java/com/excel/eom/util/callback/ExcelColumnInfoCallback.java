@@ -16,7 +16,7 @@ public interface ExcelColumnInfoCallback {
                       Integer width,
                       Short alignment,
                       IndexedColors cellColor,
-                      BorderStyle borderStyle,
+                      short borderStyle,
                       IndexedColors borderColor);
 
 }
