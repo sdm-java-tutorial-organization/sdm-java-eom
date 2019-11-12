@@ -1,13 +1,17 @@
 package com.excel.eom.util;
 
+
+import com.sun.corba.se.spi.orbutil.threadpool.Work;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ExcelRowUtilTest {
 
@@ -27,10 +31,10 @@ public class ExcelRowUtilTest {
 
     @Test
     public void getRowNum() throws Throwable{
-        XSSFWorkbook book = ExcelFileUtil.readExcelByFile(file);
-        XSSFSheet sheet = ExcelSheetUtil.getSheet(book, 0);
+        Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(file);
+        Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
 
-        XSSFRow row = ExcelRowUtil.getRow(sheet, 2);
+        Row row = ExcelRowUtil.getRow(sheet, 2);
         assertEquals(ExcelRowUtil.getRowNum(row), 2);
 
         row = ExcelRowUtil.getRow(sheet, 3);

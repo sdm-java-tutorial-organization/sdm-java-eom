@@ -1,8 +1,7 @@
 package com.excel.eom.util;
 
 
-import org.apache.poi.hssf.usermodel.DVConstraint;
-import org.apache.poi.hssf.usermodel.HSSFDataValidation;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.xssf.usermodel.*;
@@ -22,16 +21,16 @@ public class ExcelSheetUtil {
      *
      * @param sheet
      */
-    public static void print(XSSFSheet sheet) {
+    public static void print(Sheet sheet) {
         int rowCount = sheet.getPhysicalNumberOfRows();
-        XSSFRow firstRow = sheet.getRow(0);
+        Row firstRow = sheet.getRow(0);
         if(firstRow != null) {
             int columnCount = sheet.getRow(0).getPhysicalNumberOfCells();
             for (int i = 0; i < rowCount; i++) {
-                XSSFRow row = sheet.getRow(i);
+                Row row = sheet.getRow(i);
                 List<Object> rowStorage = new ArrayList<>();
                 for (int j = 0; j < columnCount; j++) {
-                    XSSFCell cell = row.getCell(j);
+                    Cell cell = row.getCell(j);
                     if (cell != null) {
                         Object value = ExcelCellUtil.getCellValue(cell);
                         rowStorage.add(value);
@@ -50,8 +49,8 @@ public class ExcelSheetUtil {
      * @param book
      * @param name
      */
-    public static XSSFSheet initSheet(XSSFWorkbook book,
-                                      String name) {
+    public static Sheet initSheet(Workbook book,
+                                  String name) {
         return book.createSheet(name);
     }
 
@@ -61,7 +60,7 @@ public class ExcelSheetUtil {
      * @param book
      * @param name
      */
-    public static XSSFSheet getSheet(XSSFWorkbook book,
+    public static Sheet getSheet(Workbook book,
                                      String name) {
         return book.getSheet(name);
     }
@@ -72,7 +71,7 @@ public class ExcelSheetUtil {
      * @param book
      * @param index
      */
-    public static XSSFSheet getSheet(XSSFWorkbook book,
+    public static Sheet getSheet(Workbook book,
                                      int index) {
         return book.getSheetAt(index);
     }
@@ -82,8 +81,8 @@ public class ExcelSheetUtil {
      *
      * @param book
      * */
-    public static List<XSSFSheet> getSheets(XSSFWorkbook book) {
-        List<XSSFSheet> result = new ArrayList<>();
+    public static List<Sheet> getSheets(Workbook book) {
+        List<Sheet> result = new ArrayList<>();
         int sheetCount = book.getNumberOfSheets();
         for(int i=0; i<sheetCount; i++) {
             result.add(ExcelSheetUtil.getSheet(book, i));
@@ -96,7 +95,7 @@ public class ExcelSheetUtil {
      *
      * @param book
      * */
-    public static List<String> getSheetNames(XSSFWorkbook book) {
+    public static List<String> getSheetNames(Workbook book) {
         List<String> result = new ArrayList<>();
         int sheetCount = book.getNumberOfSheets();
         for(int i=0; i<sheetCount; i++) {
@@ -110,7 +109,7 @@ public class ExcelSheetUtil {
      *
      * @param sheet
      * */
-    public static String getSheetName(XSSFSheet sheet) {
+    public static String getSheetName(Sheet sheet) {
         return sheet.getSheetName();
     }
 
@@ -119,13 +118,13 @@ public class ExcelSheetUtil {
      *
      * @param sheet
      */
-    public static int getSheetHeight(XSSFSheet sheet) {
+    public static int getSheetHeight(Sheet sheet) {
         int rowCount = sheet.getPhysicalNumberOfRows();
         return rowCount;
         /*for (int i = 0; i < rowCount; i++) {
-            XSSFRow row = ExcelRowUtil.getRow(sheet, i);
+            Row row = ExcelRowUtil.getRow(sheet, i);
             if (row != null) {
-                XSSFCell cell = ExcelCellUtil.getCell(row, 0);
+                Cell cell = ExcelCellUtil.getCell(row, 0);
                 if (cell != null) {
                     String value = (String) ExcelCellUtil.getCellValue(cell);
                     if (value == null || value.equals("")) {
@@ -151,7 +150,7 @@ public class ExcelSheetUtil {
      * @param rowIdx
      * @param colIdx
      */
-    public static CellRangeAddress getMergedRegion(XSSFSheet sheet,
+    public static CellRangeAddress getMergedRegion(Sheet sheet,
                                                    int rowIdx,
                                                    int colIdx) {
         for (int i = 0; i < sheet.getNumMergedRegions(); ++i) {
@@ -180,7 +179,7 @@ public class ExcelSheetUtil {
      * @param firstColumn
      * @param lastColumn
      */
-    public static void addRegion(XSSFSheet sheet,
+    public static void addRegion(Sheet sheet,
                                  int firstRow,
                                  int lastRow,
                                  int firstColumn,
@@ -196,22 +195,22 @@ public class ExcelSheetUtil {
         return new CellRangeAddressList(firstRow, lastRow, firstColumn, lastColumn);
     }
 
-    public static XSSFDataValidationConstraint getDropdown(XSSFDataValidationHelper dvHelper,
-                                                           String[] items) {
-        return (XSSFDataValidationConstraint) dvHelper.createExplicitListConstraint(items);
+    public static DataValidationConstraint getDropdown(DataValidationHelper dvHelper,
+                                                       String[] items) {
+        return dvHelper.createExplicitListConstraint(items);
     }
 
-    public static void setDropdown(XSSFSheet sheet,
-                                   XSSFDataValidationHelper dvHelper,
-                                   XSSFDataValidationConstraint dropdown,
+    public static void setDropdown(Sheet sheet,
+                                   DataValidationHelper dvHelper,
+                                   DataValidationConstraint dropdown,
                                    CellRangeAddressList regions) {
-        XSSFDataValidation inputDataValidation = (XSSFDataValidation) dvHelper.createValidation(dropdown, regions);
+        DataValidation inputDataValidation = dvHelper.createValidation(dropdown, regions);
         inputDataValidation.setShowErrorBox(true);
         inputDataValidation.setSuppressDropDownArrow(true);
         sheet.addValidationData(inputDataValidation);
     }
 
-    public static void createFreezePane(XSSFSheet sheet, int fixedColumnCount, int fixedRowCount) {
+    public static void createFreezePane(Sheet sheet, int fixedColumnCount, int fixedRowCount) {
         sheet.createFreezePane(fixedColumnCount, fixedRowCount);
     }
 

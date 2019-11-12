@@ -1,5 +1,8 @@
 package com.excel.eom.util;
 
+
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -10,14 +13,24 @@ import java.io.IOException;
 public class ExcelFileUtil {
 
     /**
-     * readExcelByFile
+     * file -> XSSFWorkbook
      *
      * @param file
      * */
-    public static XSSFWorkbook readExcelByFile(File file) throws IOException {
+    public static Workbook getXSSFWorkbookByFile(File file) throws IOException {
         FileInputStream excelFile = new FileInputStream(file);
         return new XSSFWorkbook(excelFile);
     }
+
+    /**
+     * file -> SXSSFWorkbook
+     *
+     * @param file
+     * */
+    /*public static Workbook getSXSSFWorkbookByFile(File file) throws IOException {
+        FileInputStream excelFile = new FileInputStream(file);
+        return new SXSSFWorkbook(excelFile);
+    }*/
 
     /**
      * writeExcel
@@ -25,7 +38,7 @@ public class ExcelFileUtil {
      * @param book
      * @param path
      */
-    public static void writeExcel(XSSFWorkbook book, String path) throws IOException {
+    public static void writeExcel(Workbook book, String path) throws IOException {
         File file = new File(path);
         FileOutputStream fos = new FileOutputStream(file);
         book.write(fos);

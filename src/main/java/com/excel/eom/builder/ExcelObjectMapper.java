@@ -22,11 +22,10 @@ import com.excel.eom.util.callback.FieldInfoCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.ExcelObjectInfoCallback;
 import org.apache.poi.ss.formula.functions.T;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +39,13 @@ public class ExcelObjectMapper {
     private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
 
     private Class<?> clazz;
-    private XSSFWorkbook book;
-    private XSSFSheet sheet;
-    private XSSFDataValidationHelper dvHelper;
+    private boolean isSXSSF = false;
+    private Workbook book;
+    private Sheet sheet;
+    private DataValidationHelper dvHelper;
     private Map<Field, FieldInfo> fieldInfoMap = new HashMap<>();
-    private Map<Field, XSSFCellStyle> fieldStyleMap = new HashMap<>();
-    private Map<Field, XSSFDataValidationConstraint> fieldDropdownMap = new HashMap<>();
+    private Map<Field, CellStyle> fieldStyleMap = new HashMap<>();
+    private Map<Field, DataValidationConstraint> fieldDropdownMap = new HashMap<>();
     private Map<String, Map<String, Object>> options = new HashMap<>();
 
     private ExcelObjectMapper() {
@@ -76,7 +76,10 @@ public class ExcelObjectMapper {
      *
      * @param book
      */
-    public ExcelObjectMapper initBook(XSSFWorkbook book) {
+    public ExcelObjectMapper initBook(Workbook book) {
+        if(book.getClass().getSimpleName().equals(SXSSFWorkbook.class.getSimpleName())) {
+            isSXSSF = true;
+        }
         this.book = book;
         return this;
     }
@@ -86,7 +89,7 @@ public class ExcelObjectMapper {
      *
      * @param sheet
      */
-    public ExcelObjectMapper initSheet(XSSFSheet sheet) {
+    public ExcelObjectMapper initSheet(Sheet sheet) {
         this.sheet = sheet;
         return this;
     }
@@ -119,14 +122,14 @@ public class ExcelObjectMapper {
             presetSheet();
 
             // [h]eader
-            XSSFRow hRow = ExcelRowUtil.initRow(this.sheet, 0);
+            Row hRow = ExcelRowUtil.initRow(this.sheet, 0);
             setHeaderRow(hRow);
 
             // [b]ody
             EOMBodyException bodyException = new EOMBodyException();
             for (int i = 0; i < objects.size(); i++) {
                 T object = objects.get(i);
-                XSSFRow bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
+                Row bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
                 setBodyRow(bRow, object, bodyException);
             }
 
@@ -167,7 +170,7 @@ public class ExcelObjectMapper {
             if (sheetHeight > 1) {
 
                 // [h]eader - haederException
-                XSSFRow hRow = ExcelRowUtil.getRow(this.sheet, 0);
+                Row hRow = ExcelRowUtil.getRow(this.sheet, 0);
                 checkHeader(hRow);
 
                 // [b]ody - bodyException
@@ -296,8 +299,9 @@ public class ExcelObjectMapper {
 
                     // init static dropdown (sheet)
                     if (field.getType().isEnum()) {
-                        if (dvHelper == null) {
-                            dvHelper = new XSSFDataValidationHelper(sheet);
+                        if (dvHelper == null && isSXSSF == false) {
+                            XSSFSheet xssfSheet = (XSSFSheet) sheet;
+                            dvHelper = new XSSFDataValidationHelper(xssfSheet);
                         }
 
                         Object[] enums = field.getType().getEnumConstants();
@@ -309,9 +313,10 @@ public class ExcelObjectMapper {
                     }
 
                     // init dynamic dropdown (sheet)
-                    if (dropdown.equals("") == false) {
+                    if (dropdown.equals("") == false && isSXSSF == false) {
                         if (dvHelper == null) {
-                            dvHelper = new XSSFDataValidationHelper(sheet);
+                            XSSFSheet xssfSheet = (XSSFSheet) sheet;
+                            dvHelper = new XSSFDataValidationHelper(xssfSheet);
                         }
                         // TODO null check and exception
                         Map<String, Object> option = options.get(dropdown);
@@ -320,8 +325,9 @@ public class ExcelObjectMapper {
                     }
 
                     // init style (book)
-                    if (book != null) {
-                        XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                    if (book != null && isSXSSF == false) {
+                        XSSFWorkbook xssfWorkbook = (XSSFWorkbook) book;
+                        XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(xssfWorkbook);
                         ExcelCellUtil.setCellColor(cellStyle, cellColor);
                         ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
                         ExcelCellUtil.setAlignment(cellStyle, alignment);
@@ -335,8 +341,8 @@ public class ExcelObjectMapper {
     /**
      * setHeaderRow
      */
-    private void setHeaderRow(final XSSFRow row) {
-        final XSSFWorkbook book = this.book;
+    private void setHeaderRow(final Row row) {
+        final Workbook book = this.book;
         final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
         ReflectionUtil.getClassInfo(this.clazz, new ExcelObjectInfoCallback() {
             @Override
@@ -346,25 +352,35 @@ public class ExcelObjectMapper {
                                      IndexedColors borderColor,
                                      int fixedRowCount,
                                      int fixedColumnCount) {
-                XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
-                XSSFFont font = ExcelCellUtil.getFont(book);
+                if(isSXSSF == false) {
+                    XSSFWorkbook xssfWorkbook = (XSSFWorkbook) book;
+                    XSSFCellStyle cellStyle = ExcelCellUtil.getCellStyle(xssfWorkbook);
+                    XSSFFont font = ExcelCellUtil.getFont(xssfWorkbook);
 
-                // style - static
-                font.setBold(true);
-                ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
-                ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
-                ExcelCellUtil.setFont(cellStyle, font);
+                    // style - static
+                    font.setBold(true);
+                    ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
+                    ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
+                    ExcelCellUtil.setFont(cellStyle, font);
 
-                // style - dynamic
-                ExcelCellUtil.setCellColor(cellStyle, cellColor);
-                ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+                    // style - dynamic
+                    ExcelCellUtil.setCellColor(cellStyle, cellColor);
+                    ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
+
+                    FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
+                        @Override
+                        public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                            Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                            ExcelCellUtil.setCellStyle(cell, cellStyle);
+                        }
+                    });
+                }
 
                 FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
                     @Override
                     public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                        XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                        Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                         ExcelCellUtil.setCellValue(cell, fieldInfo.getName());
-                        ExcelCellUtil.setCellStyle(cell, cellStyle);
                     }
                 });
             }
@@ -378,11 +394,11 @@ public class ExcelObjectMapper {
      * @param object
      * @param bodyException
      */
-    private <T> void setBodyRow(XSSFRow row, T object, EOMBodyException bodyException) {
+    private <T> void setBodyRow(Row row, T object, EOMBodyException bodyException) {
         FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
             @Override
             public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = null;
                 String cellType = null;
 
@@ -430,7 +446,7 @@ public class ExcelObjectMapper {
                     }
                 }
 
-                XSSFCellStyle style = fieldStyleMap.get(field);
+                CellStyle style = fieldStyleMap.get(field);
                 ExcelCellUtil.setCellValue(cell, cellValue, (cellType != null ? cellType : field));
                 ExcelCellUtil.setCellStyle(cell, style);
             }
@@ -597,12 +613,12 @@ public class ExcelObjectMapper {
     /**
      * checkHeader
      */
-    private void checkHeader(XSSFRow row) throws EOMHeaderException {
+    private void checkHeader(Row row) throws EOMHeaderException {
         final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
         FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
             @Override
             public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                XSSFCell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
                 if (fieldInfo.getName().equals(cellValue) == false) {
                     // * THROW WRONG_HEADER_EXCEPTION
@@ -619,7 +635,7 @@ public class ExcelObjectMapper {
      * @param areaValues
      * @param bodyException
      */
-    private Object getObjectByRow(XSSFRow row,
+    private Object getObjectByRow(Row row,
                                   Map<Field, Object> areaValues,
                                   EOMBodyException bodyException) {
         Object instance = null;
@@ -631,14 +647,14 @@ public class ExcelObjectMapper {
             // * DOESN'T OCCUR (initElement)
         }
 
-        final XSSFSheet sheet = this.sheet;
+        final Sheet sheet = this.sheet;
         final Object copyInstance = instance;
         int rowIdx = ExcelRowUtil.getRowNum(row);
         FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
             @Override
             public void getFieldInfo(Field field, FieldInfo fieldInfo) {
                 int colIdx = fieldInfo.getIndex();
-                XSSFCell cell = row.getCell(colIdx);
+                Cell cell = row.getCell(colIdx);
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
 
                 // region value management
@@ -812,7 +828,12 @@ public class ExcelObjectMapper {
                     Object result = uniqueKeyByFields.stream()
                             .map(field -> {
                                 try {
-                                    return field.get(object);
+                                    Object fieldObject = field.get(object);
+                                    if(fieldObject != null) {
+                                        return fieldObject;
+                                    } else {
+                                        return "";
+                                    }
                                 } catch (IllegalAccessException e) {
                                     e.printStackTrace();
                                     return "";

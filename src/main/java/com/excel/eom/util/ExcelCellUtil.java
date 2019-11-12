@@ -1,9 +1,6 @@
 package com.excel.eom.util;
 
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
 import java.lang.reflect.Field;
@@ -16,7 +13,7 @@ public class ExcelCellUtil {
      * @param row
      * @param index
      * */
-    public static XSSFCell getCell(XSSFRow row, int index) {
+    public static Cell getCell(Row row, int index) {
         if(row.getCell(index) != null) {
             return row.getCell(index);
         } else {
@@ -29,7 +26,7 @@ public class ExcelCellUtil {
      *
      * @param cell
      */
-    public static Object getCellValue(XSSFCell cell) {
+    public static Object getCellValue(Cell cell) {
         if(cell == null) {
             return null;
         }
@@ -65,7 +62,7 @@ public class ExcelCellUtil {
      * @param cell
      * @param value
      * */
-    public static void setCellValue(XSSFCell cell, Object value) {
+    public static void setCellValue(Cell cell, Object value) {
         cell.setCellValue((String) value);
     }
 
@@ -76,7 +73,7 @@ public class ExcelCellUtil {
      * @param value
      * @param type
      * */
-    public static void setCellValue(XSSFCell cell, Object value, Object type) {
+    public static void setCellValue(Cell cell, Object value, Object type) {
         if(type instanceof Field) {
             Field field = (Field) type;
             if(field.getType().isEnum()) {
@@ -129,7 +126,7 @@ public class ExcelCellUtil {
     }
 
     /**
-     * getCellStyle
+     * (XSSF) getCellStyle
      *
      * @param book
      * */
@@ -143,7 +140,7 @@ public class ExcelCellUtil {
      * @param cell
      * @param cellStyle
      * */
-    public static void setCellStyle(XSSFCell cell, XSSFCellStyle cellStyle) {
+    public static void setCellStyle(Cell cell, CellStyle cellStyle) {
         cell.setCellStyle(cellStyle);
     }
 
@@ -153,7 +150,7 @@ public class ExcelCellUtil {
      * @param cellStyle
      * @param color
      * */
-    public static void setCellColor(XSSFCellStyle cellStyle, IndexedColors color) {
+    public static void setCellColor(CellStyle cellStyle, IndexedColors color) {
         cellStyle.setFillForegroundColor(color.getIndex());
         cellStyle.setFillPattern(CellStyle.SOLID_FOREGROUND);
     }
@@ -164,12 +161,12 @@ public class ExcelCellUtil {
      * @param cellStyle
      * @param alignment
      * */
-    public static void setAlignment(XSSFCellStyle cellStyle, short alignment) {
+    public static void setAlignment(CellStyle cellStyle, short alignment) {
         cellStyle.setAlignment(alignment);
     }
 
     /**
-     * setCellBorder
+     * (XSSF) setCellBorder
      *
      * @param cellStyle
      * @param borderStyle
@@ -187,7 +184,7 @@ public class ExcelCellUtil {
     }
 
     /**
-     * getFont
+     * (XSSF) getFont
      *
      * @param book
      * */
@@ -201,7 +198,7 @@ public class ExcelCellUtil {
      * @param style
      * @param font
      * */
-    public static void setFont(XSSFCellStyle style, XSSFFont font) {
+    public static void setFont(CellStyle style, XSSFFont font) {
         style.setFont(font);
     }
 
