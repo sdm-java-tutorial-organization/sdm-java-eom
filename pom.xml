@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nexon.mservice</groupId>
     <artifactId>eom</artifactId>
-    <version>1.0</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <parent>
@@ -32,11 +32,11 @@
         </dependency>
 
         <!-- Excel : B -->
-        <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi</artifactId>
-            <version>${org.apache.poi.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.poi</groupId>-->
+            <!--<artifactId>poi</artifactId>-->
+            <!--<version>${org.apache.poi.version}</version>-->
+        <!--</dependency>-->
 
         <!-- Annotation Processing -->
         <dependency>

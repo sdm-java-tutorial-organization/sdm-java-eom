@@ -11,6 +11,10 @@ import java.lang.reflect.Field;
 
 public class ReflectionUtil {
 
+    public static boolean isSameClass(Class<?> clazzA, Class<?> classB) {
+        return clazzA.getSimpleName().equals(classB.getSimpleName());
+    }
+
     public static Object getFieldValue(Field field, Object object) {
         try {
             return field.get(object);

@@ -392,13 +392,13 @@ XSSF는 CellStyle을 지원하나 SXSSF에 비해 약 10배 정도 속도가 느
 XSSFWorkbook
 
 ```java
-XSSFWorkbook book = new XSSFWorkbook();
+Workbook book = new XSSFWorkbook();
 Sheet sheet = book.createSheet("sheetName");
 ExcelObjectMapper.init()
     .initModel(Inventory.class)
     .initBook(book)
     .initSheet(sheet)
-    .buildObject();
+    .buildObject(items);
 ```
 
 
@@ -406,7 +406,13 @@ ExcelObjectMapper.init()
 SXSSFWorkbook
 
 ```java
-
+Workbook book = new SXSSFWorkbook();
+Sheet sheet = book.createSheet("sheetName");
+ExcelObjectMapper.init()
+    .initModel(Inventory.class)
+    .initBook(book)
+    .initSheet(sheet)
+    .buildObject(items);
 ```
 
 
@@ -486,13 +492,12 @@ Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 �
 >
 > - Development Exception 같은 경우는 Compile 단계에서 확인이 가능하다면 Runtime Souce Code를 줄일 수 있습니다.
 >   따라서 Annotation Processing으로 미리 컴파일 에러를 발생시켜 부하를 줄이는 방식으로 빌드업할 예정입니다.
-> - Excel 작업은 메모리 사용이 높은 작업임으로 OutOfMemory에 유의해야합니다. 
->   따라서 SXSSF를 통해 추가 개발이 필요합니다.
+> - ~~Excel 작업은 메모리 사용이 높은 작업임으로 OutOfMemory에 유의해야합니다. 
+>   따라서 SXSSF를 통해 추가 개발이 필요합니다.~~
 >   https://qiita.com/tool-taro/items/4b3c802bb114a9110ecb
 > - POI 라이브러리에 의존성이 있는 함수는 모두 Util로 통합하여 개발하였습니다. 
 >   차후 발생할 수 있는 POI 라이브러리 변경에  대응하기 위함입니다.
->
-> - 메모리 누수가 발생할 수 있는지 성능 튜닝이 필요합니다.
+>- 메모리 누수가 발생할 수 있는지 성능 튜닝이 필요합니다.
 > - 현재는 Database의 Relation을 역정규화를 통해 하나의 Object에서만 표현할 수 있습니다.
->   이후에 독립적으로 존재하는 N개의 Object를 조합해서 Excel로 표현하는 기법 또한 빌드업할 예정입니다. (Major Update)
+> 이후에 독립적으로 존재하는 N개의 Object를 조합해서 Excel로 표현하는 기법 또한 빌드업할 예정입니다. (Major Update)
 

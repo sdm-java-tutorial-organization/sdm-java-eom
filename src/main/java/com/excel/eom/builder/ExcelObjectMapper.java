@@ -9,12 +9,9 @@ import com.excel.eom.exception.EOMDevelopmentException;
 import com.excel.eom.exception.EOMHeaderException;
 import com.excel.eom.exception.body.EOMNotUniqueException;
 import com.excel.eom.exception.body.EOMWrongDataTypeException;
-import com.excel.eom.exception.development.EOMObjectException;
+import com.excel.eom.exception.development.*;
 import com.excel.eom.exception.body.EOMNotContainException;
 import com.excel.eom.exception.body.EOMNotNullException;
-import com.excel.eom.exception.development.EOMWrongGroupException;
-import com.excel.eom.exception.development.EOMWrongIndexException;
-import com.excel.eom.exception.development.EOMWrongUniqueFieldException;
 import com.excel.eom.model.FieldInfo;
 import com.excel.eom.model.Dropdown;
 import com.excel.eom.util.*;
@@ -113,6 +110,13 @@ public class ExcelObjectMapper implements ExcelBuilder {
                 this.clazz != null &&
                 objects != null &&
                 objects.size() > 0) {
+
+            T t = objects.get(0);
+            if(ReflectionUtil.isSameClass(t.getClass(), this.clazz)) {
+                Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
+                throw new EOMWrongListException(args);
+            }
+
             initElements();
             validateAnnotation(fieldInfoMap);
             presetSheet();
@@ -275,7 +279,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
     /**
      * presetSheet ( object -> sheet )
      */
-    private void presetSheet() {
+    private void presetSheet() throws EOMDevelopmentException {
         if (this.clazz != null && this.sheet != null) {
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
@@ -297,13 +301,13 @@ public class ExcelObjectMapper implements ExcelBuilder {
                     if (field.getType().isEnum()) {
                         if (dvHelper == null) {
                             dvHelper = sheet.getDataValidationHelper();
-                            Object[] enums = field.getType().getEnumConstants();
-                            List<String> items = new ArrayList<>();
-                            for (Object e : enums) {
-                                items.add(e.toString());
-                            }
-                            fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                         }
+                        Object[] enums = field.getType().getEnumConstants();
+                        List<String> items = new ArrayList<>();
+                        for (Object e : enums) {
+                            items.add(e.toString());
+                        }
+                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
 
                     // init dynamic dropdown (sheet)
@@ -311,8 +315,11 @@ public class ExcelObjectMapper implements ExcelBuilder {
                         if (dvHelper == null) {
                             dvHelper = sheet.getDataValidationHelper();
                         }
-                        // TODO null check and exception
                         Map<String, Object> option = options.get(dropdown);
+                        if(option == null) {
+                            Map<String, String> args = EOMNotFoundDropdownKeyException.getArguments(field.getName(), dropdown);
+                            throw new EOMNotFoundDropdownKeyException(args);
+                        }
                         List<String> items = new ArrayList(option.keySet());
                         fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
                     }
@@ -394,7 +401,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
                 try {
                     cellValue = field.get(object);
                 } catch (IllegalAccessException e) {
-                    // * DOESN'T OCCUR (because of initElement)
+                    // * DOESN'T OCCUR (because of initElements)
                 }
 
                 // nullable
