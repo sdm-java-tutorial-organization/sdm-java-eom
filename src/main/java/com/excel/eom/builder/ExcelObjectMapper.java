@@ -52,6 +52,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
 
     /**
      * init
+     *
      */
     public static ExcelObjectMapper init() {
         return new ExcelObjectMapper();
@@ -112,7 +113,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
                 objects.size() > 0) {
 
             T t = objects.get(0);
-            if(ReflectionUtil.isSameClass(t.getClass(), this.clazz)) {
+            if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
                 Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
                 throw new EOMWrongListException(args);
             }
@@ -729,17 +730,23 @@ public class ExcelObjectMapper implements ExcelBuilder {
                         case StringConstant.INTEGER:
                             if (cellValue != null) {
                                 if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false) {
-                                    cellValue = Integer.parseInt((String) cellValue);
+                                    if(((String) cellValue).equals("")) {
+                                        cellValue = 0;
+                                    } else {
+                                        cellValue = Integer.parseInt((String) cellValue);
+                                    }
                                 }
+                            } else {
+                                cellValue = 0;
                             }
                             break;
                         // [2] number -> string
                         case StringConstant.STRING:
                             if (cellValue != null) {
                                 if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false
-                                        ||
-                                        cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false
-                                ) {
+                                    ||
+                                    cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false)
+                                {
                                     cellValue = cellValue + "";
                                 }
                             } else {
