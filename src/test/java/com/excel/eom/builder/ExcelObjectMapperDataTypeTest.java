@@ -28,15 +28,16 @@ import java.util.*;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING) // 사전식순서 (a_, b_, c_, ...)
 public class ExcelObjectMapperDataTypeTest {
 
-    static String DEPLOY_BASIC = "src/main/resources/deploy/deploy_basic.xlsx";
-    static String DEPLOY_NULLABLE = "src/main/resources/deploy/deploy_nullable.xlsx";
-    static String DEPLOY_DROPDOWN = "src/main/resources/deploy/deploy_dropdown.xlsx";
-    static String DEPLOY_DROPDOWN_DYNAMIC = "src/main/resources/deploy/deploy_dropdown_dynamic.xlsx";
-    static String DEPLOY_THROW_NONCONTAIN = "src/main/resources/deploy/deploy_dropdown_throw_notContain.xlsx";
-    static String DEPLOY_THROW_NONCONTAIN_DYNAMIC = "src/main/resources/deploy/deploy_dropdown_dynamic_throw_notContain.xlsx";
-    static String DEPLOY_GROUP_2 = "src/main/resources/deploy/deploy_group_2.xlsx";
-    static String DEPLOY_GROUP_2_THROW = "src/main/resources/deploy/deploy_group_2_throw.xlsx";
+    static String DEPLOY_BASIC =
+            "src/main/resources/deploy/deploy_basic.xlsx";
 
+    static String DEPLOY_LONG_TYPE =
+            "src/main/resources/deploy/deploy_long_type.xlsx";
+
+
+    // ==============================================================
+    // Object -> Sheet
+    // ==============================================================
 
     @Test
     public void a_buildObject() throws Throwable {
@@ -57,7 +58,29 @@ public class ExcelObjectMapperDataTypeTest {
     }
 
     @Test
-    public void b_buildSheet() throws Throwable {
+    public void b_buildSheet_long() throws Throwable {
+        List<ExcelObjectLong> items = Arrays.asList(
+                new ExcelObjectLong("nameA", (long) 1, (long) 2),
+                new ExcelObjectLong("nameB", (long) 1, (long) 2),
+                new ExcelObjectLong("nameC", (long) 1, (long) 2)
+        );
+        Workbook book = new SXSSFWorkbook();
+        Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectLong.class)
+                .initBook(book)
+                .initSheet(sheet)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(book, DEPLOY_LONG_TYPE);
+    }
+
+    // ==============================================================
+    // Sheet -> Object
+    // ==============================================================
+
+    @Test
+    public void b_buildSheet_nullable() throws Throwable {
         Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_BASIC));
         Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
         ExcelSheetUtil.print(sheet);
@@ -87,6 +110,28 @@ public class ExcelObjectMapperDataTypeTest {
 
         @ExcelColumn(name = "COUNT", index=1)
         public Integer count;
+
+    }
+
+    @Data
+    @NoArgsConstructor // * must have
+    @AllArgsConstructor
+    @ExcelObject(
+            name = "EOM",
+            cellColor = IndexedColors.YELLOW,
+            borderColor = IndexedColors.BLACK,
+            borderStyle = CellStyle.BORDER_THIN)
+    @UniqueKey("name")
+    public static class ExcelObjectLong {
+
+        @ExcelColumn(name = "NAME", index=0, nullable = false)
+        public String name;
+
+        @ExcelColumn(name = "COUNT", index=1)
+        public Long count;
+
+        @ExcelColumn(name = "COUNT", index=2)
+        public long count2;
 
     }
 

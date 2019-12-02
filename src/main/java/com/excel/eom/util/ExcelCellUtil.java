@@ -71,7 +71,7 @@ public class ExcelCellUtil {
      *
      * @param cell
      * @param value
-     * @param type
+     * @param type - SimpleClassName or Field
      * */
     public static void setCellValue(Cell cell, Object value, Object type) {
         if(type instanceof Field) {
@@ -90,6 +90,7 @@ public class ExcelCellUtil {
                             cell.setCellValue((String) "");
                         }
                         break;
+                    case "int":
                     case "Integer":
                         if(value != null) {
                             cell.setCellValue((Integer) value);
@@ -97,12 +98,24 @@ public class ExcelCellUtil {
                             cell.setCellValue(0);
                         }
                         break;
+                    case "long":
+                    case "Long":
+                        if(value != null) {
+                            cell.setCellValue(((Long) value).intValue());
+                        } else {
+                            cell.setCellValue(0);
+                        }
+                        break;
+                    case "double":
                     case "Double":
                         if(value != null) {
                             cell.setCellValue((Double) value);
                         } else {
                             cell.setCellValue(0);
                         }
+                        break;
+                    case "float":
+                    case "Float":
                         break;
                 }
             }
@@ -114,11 +127,20 @@ public class ExcelCellUtil {
                 case "String":
                     cell.setCellValue((String) value);
                     break;
+                case "int":
                 case "Integer":
                     cell.setCellValue((Integer) value);
                     break;
+                case "long":
+                case "Long":
+                    cell.setCellValue(((Long) value).intValue());
+                    break;
+                case "double":
                 case "Double":
                     cell.setCellValue((Double) value);
+                    break;
+                case "float":
+                case "Float":
                     break;
             }
         }
