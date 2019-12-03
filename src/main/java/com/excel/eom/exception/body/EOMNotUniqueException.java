@@ -1,6 +1,5 @@
 package com.excel.eom.exception.body;
 
-import lombok.Data;
 import lombok.ToString;
 
 import java.util.HashMap;

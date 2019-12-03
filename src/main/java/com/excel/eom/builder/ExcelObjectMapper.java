@@ -135,22 +135,13 @@ public class ExcelObjectMapper implements ExcelBuilder {
             }
 
             // [r]egion
-            /*if (bodyException.countDetail() == 0) {
-
-            }*/
             Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
             setRegion(regionEndPointMapByGroup);
 
             // [u]nique
-            /*if (bodyException.countDetail() == 0) {
-
-            }*/
             validateUniqueKey(objects, regionEndPointMapByGroup, bodyException);
 
             // [d]ropdown
-            /*if (bodyException.countDetail() == 0) {
-
-            }*/
             setDropDown(objects.size());
 
             if (bodyException.countDetail() > 0) {
@@ -236,6 +227,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
 
     /**
      * validateGroup - 그룹에서 가져야할 규칙이 올바르게 적용되어 있는지 확인
+     *
      */
     private void validateAnnotation(Map<Field, FieldInfo> fieldInfoMap) throws EOMDevelopmentException {
         List<FieldInfo> list = new ArrayList<>(fieldInfoMap.values());
@@ -279,6 +271,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
 
     /**
      * presetSheet ( object -> sheet )
+     *
      */
     private void presetSheet() throws EOMDevelopmentException {
         if (this.clazz != null && this.sheet != null) {
@@ -340,6 +333,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
 
     /**
      * setHeaderRow
+     *
      */
     private void setHeaderRow(final Row row) {
         final Workbook book = this.book;
@@ -705,8 +699,8 @@ public class ExcelObjectMapper implements ExcelBuilder {
                 // dropdown - dynamic
                 if (
                         fieldInfo.getDropdown().equals(FieldInfo.INIT_DROPDOWN) == false
-                                &&
-                                options.get(fieldInfo.getDropdown()) != null
+                        &&
+                        options.get(fieldInfo.getDropdown()) != null
                 ) {
                     Object key = options.get(fieldInfo.getDropdown()).get(cellValue);
                     if (key != null) {
@@ -724,17 +718,36 @@ public class ExcelObjectMapper implements ExcelBuilder {
                 }
 
                 try {
-                    String type = field.getType().getSimpleName();
-                    switch (type) {
+                    String fieldType = field.getType().getSimpleName();
+                    String cellType = cellValue.getClass().getSimpleName();
+                    switch (cellType) {
                         // [1] string -> number
                         case StringConstant.INTEGER:
+                        case StringConstant.INTEGER_PRIMITIVE:
+                        case StringConstant.DOUBLE:
+                        case StringConstant.DOUBLE_PRIMITIVE:
+                        case StringConstant.LONG:
+                        case StringConstant.LONG_PRIMITIVE:
                             if (cellValue != null) {
-                                if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false) {
-                                    if(((String) cellValue).equals("")) {
-                                        cellValue = 0;
-                                    } else {
-                                        cellValue = Integer.parseInt((String) cellValue);
-                                    }
+                                switch (fieldType) {
+                                    case StringConstant.INTEGER:
+                                    case StringConstant.INTEGER_PRIMITIVE:
+                                        break;
+                                    case StringConstant.DOUBLE:
+                                    case StringConstant.DOUBLE_PRIMITIVE:
+                                        cellValue = Double.valueOf((Integer) cellValue); // Integer -> Double
+                                        break;
+                                    case StringConstant.LONG:
+                                    case StringConstant.LONG_PRIMITIVE:
+                                        cellValue = Long.valueOf((Integer) cellValue); // Integer -> Long
+                                        break;
+                                    default:
+                                        if(((String) cellValue).equals("")) {
+                                            cellValue = 0;
+                                        } else {
+                                            cellValue = Integer.parseInt((String) cellValue);
+                                        }
+                                        break;
                                 }
                             } else {
                                 cellValue = 0;
@@ -743,10 +756,12 @@ public class ExcelObjectMapper implements ExcelBuilder {
                         // [2] number -> string
                         case StringConstant.STRING:
                             if (cellValue != null) {
-                                if (cellValue.getClass().getSimpleName().equals(StringConstant.INTEGER) == false
-                                    ||
-                                    cellValue.getClass().getSimpleName().equals(StringConstant.DOUBLE) == false)
-                                {
+                                if (fieldType.equals(StringConstant.INTEGER) == false && fieldType.equals(StringConstant.INTEGER_PRIMITIVE) == false
+                                    &&
+                                    fieldType.equals(StringConstant.DOUBLE) == false && fieldType.equals(StringConstant.DOUBLE_PRIMITIVE) == false
+                                    &&
+                                    fieldType.equals(StringConstant.LONG) == false && fieldType.equals(StringConstant.LONG_PRIMITIVE) == false
+                                ) {
                                     cellValue = cellValue + "";
                                 }
                             } else {
