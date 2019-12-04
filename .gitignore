@@ -1,7 +1,6 @@
 /target/
 /build/
 .idea/
-/src/main/resources/deploy/
 /out/
 
 ### IntelliJ IDEA ###
