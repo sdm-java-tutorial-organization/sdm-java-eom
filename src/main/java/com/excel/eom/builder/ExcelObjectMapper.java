@@ -1,8 +1,5 @@
 package com.excel.eom.builder;
 
-
-import com.excel.eom.annotation.ExcelObject;
-import com.excel.eom.annotation.UniqueKey;
 import com.excel.eom.constant.StringConstant;
 import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMDevelopmentException;
@@ -18,11 +15,9 @@ import com.excel.eom.util.*;
 import com.excel.eom.util.callback.FieldInfoCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.ExcelObjectInfoCallback;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +26,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ExcelObjectMapper implements ExcelBuilder {
+public class ExcelObjectMapper {
 
     private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
 
@@ -106,11 +101,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
      * @param objects
      */
     public <T> void buildObject(List<T> objects) throws EOMDevelopmentException, EOMBodyException {
-        if (this.book != null &&
-                this.sheet != null &&
-                this.clazz != null &&
-                objects != null &&
-                objects.size() > 0) {
+        if (this.book != null && this.sheet != null && this.clazz != null && objects != null && objects.size() > 0) {
 
             T t = objects.get(0);
             if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
@@ -152,6 +143,7 @@ public class ExcelObjectMapper implements ExcelBuilder {
 
     /**
      * buildSheet (sheet -> object)
+     *
      */
     public <T> List<T> buildSheet() throws EOMHeaderException, EOMBodyException {
         List<T> items = new ArrayList<>();
