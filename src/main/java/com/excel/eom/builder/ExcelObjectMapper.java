@@ -1,5 +1,6 @@
 package com.excel.eom.builder;
 
+import com.excel.eom.constant.ExcelConstant;
 import com.excel.eom.constant.StringConstant;
 import com.excel.eom.exception.EOMBodyException;
 import com.excel.eom.exception.EOMDevelopmentException;
@@ -12,9 +13,9 @@ import com.excel.eom.exception.body.EOMNotNullException;
 import com.excel.eom.model.FieldInfo;
 import com.excel.eom.model.Dropdown;
 import com.excel.eom.util.*;
-import com.excel.eom.util.callback.FieldInfoCallback;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
-import com.excel.eom.util.callback.ExcelObjectInfoCallback;
+import com.excel.eom.util.callback.FieldInfoCallback;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -27,8 +28,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ExcelObjectMapper {
-
-    private static final Logger logger = LoggerFactory.getLogger(ExcelObjectMapper.class);
 
     private Class<?> clazz;
     private Workbook book;
@@ -96,7 +95,7 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * buildObject (object -> sheet)
+     * List[Object] -> Sheet 빌드합니다.
      *
      * @param objects
      */
@@ -109,8 +108,8 @@ public class ExcelObjectMapper {
                 throw new EOMWrongListException(args);
             }
 
-            initElements();
             validateAnnotation(fieldInfoMap);
+            initFieldInfos();
             presetSheet();
 
             // [h]eader
@@ -149,7 +148,7 @@ public class ExcelObjectMapper {
         List<T> items = new ArrayList<>();
 
         if (this.sheet != null && this.clazz != null) {
-            initElements();
+            initFieldInfos();
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
             if (sheetHeight > 1) {
 
@@ -182,9 +181,10 @@ public class ExcelObjectMapper {
     // ===================== private =====================
 
     /**
-     * initElements
+     * FieldInfo 초기화함수
+     * 
      */
-    private void initElements() throws EOMDevelopmentException {
+    private void initFieldInfos() throws EOMDevelopmentException {
         if (this.clazz != null) {
             try {
                 Object instance = this.clazz.newInstance();
@@ -199,19 +199,10 @@ public class ExcelObjectMapper {
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
                 @Override
                 public void getFieldInfo(// == info ==
-                                         Field field,
-                                         String name,
-                                         Integer index,
-                                         Integer group,
-                                         String dropdown,
-                                         Boolean nullable,
+                                         Field field, String name, Integer index, Integer group, String dropdown, Boolean nullable,
                                          // == style ==
-                                         Integer width,
-                                         Short alignment,
-                                         IndexedColors cellColor,
-                                         short borderStyle,
-                                         IndexedColors borderColor) {
-                    fieldInfoMap.put(field, new FieldInfo(name, index, group, dropdown, nullable));
+                                         Integer width, Short alignment, IndexedColors cellColor, short borderStyle, IndexedColors borderColor) {
+                    fieldInfoMap.put(field, new FieldInfo(name, index, group, dropdown, nullable, width, alignment, cellColor, borderStyle, borderColor));
                 }
             });
         }
@@ -263,64 +254,50 @@ public class ExcelObjectMapper {
 
     /**
      * presetSheet ( object -> sheet )
+     * 시트를 설정하기 위한 값을 미리 정의하는 함수 (fieldDropdownMap, fieldStyleMap)
      *
      */
     private void presetSheet() throws EOMDevelopmentException {
-        if (this.clazz != null && this.sheet != null) {
-            ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
-                @Override
-                public void getFieldInfo(Field field,
-                                         String name,
-                                         Integer index,
-                                         Integer group,
-                                         String dropdown,
-                                         Boolean nullable,
-                                         Integer width,
-                                         Short alignment,
-                                         IndexedColors cellColor,
-                                         short borderStyle,
-                                         IndexedColors borderColor) {
-                    // init width (sheet)
-                    sheet.setColumnWidth(index, width * 100 * 3);
+        FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
+            @Override
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
 
-                    // init static dropdown (sheet)
-                    if (field.getType().isEnum()) {
-                        if (dvHelper == null) {
-                            dvHelper = sheet.getDataValidationHelper();
-                        }
-                        Object[] enums = field.getType().getEnumConstants();
-                        List<String> items = new ArrayList<>();
-                        for (Object e : enums) {
-                            items.add(e.toString());
-                        }
-                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
-                    }
+                // init width (sheet)
+                sheet.setColumnWidth(fieldInfo.getIndex(), fieldInfo.getStyleInfo().getWidth() * ExcelConstant.CELL_WIDTH_DEFAULT);
 
-                    // init dynamic dropdown (sheet)
-                    if (dropdown.equals("") == false) {
-                        if (dvHelper == null) {
-                            dvHelper = sheet.getDataValidationHelper();
-                        }
-                        Map<String, Object> option = options.get(dropdown);
-                        if(option == null) {
-                            Map<String, String> args = EOMNotFoundDropdownKeyException.getArguments(field.getName(), dropdown);
-                            throw new EOMNotFoundDropdownKeyException(args);
-                        }
-                        List<String> items = new ArrayList(option.keySet());
-                        fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
+                // init enum(static) dropdown (sheet)
+                if (field.getType().isEnum()) {
+                    if (dvHelper == null) {
+                        dvHelper = sheet.getDataValidationHelper();
                     }
-
-                    // init style (book)
-                    if (book != null) {
-                        CellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
-                        ExcelCellUtil.setCellColor(cellStyle, cellColor);
-                        ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
-                        ExcelCellUtil.setAlignment(cellStyle, alignment);
-                        fieldStyleMap.put(field, cellStyle);
-                    }
+                    String[] enumArray = DropdownUtil.getEnumToArray(field);
+                    fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, enumArray));
                 }
-            });
-        }
+
+                // init dynamic dropdown (sheet)
+                if (fieldInfo.getDropdown().equals("") == false) {
+                    if (dvHelper == null) {
+                        dvHelper = sheet.getDataValidationHelper();
+                    }
+                    Map<String, Object> option = options.get(fieldInfo.getDropdown());
+                    if(option == null) {
+                        Map<String, String> args = EOMNotFoundDropdownKeyException.getArguments(field.getName(), fieldInfo.getDropdown());
+                        throw new EOMNotFoundDropdownKeyException(args);
+                    }
+                    List<String> items = new ArrayList(option.keySet());
+                    fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
+                }
+
+                // init style (book)
+                if (book != null) {
+                    CellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
+                    ExcelCellUtil.setCellColor(cellStyle, fieldInfo.getStyleInfo().getCellColor());
+                    ExcelCellUtil.setCellBorder(cellStyle, fieldInfo.getStyleInfo().getBorderStyle(), fieldInfo.getStyleInfo().getBorderColor());
+                    ExcelCellUtil.setAlignment(cellStyle, fieldInfo.getStyleInfo().getAlignment());
+                    fieldStyleMap.put(field, cellStyle);
+                }
+            }
+        });
     }
 
     /**
@@ -329,49 +306,19 @@ public class ExcelObjectMapper {
      */
     private void setHeaderRow(final Row row) {
         final Workbook book = this.book;
-        final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
-        ReflectionUtil.getClassInfo(this.clazz, new ExcelObjectInfoCallback() {
+        CellStyle cellStyle = HeaderUtil.getHeaderCellStyle(book, sheet, clazz);
+        FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
             @Override
-            public void getClassInfo(String name,
-                                     IndexedColors cellColor,
-                                     short borderStyle,
-                                     IndexedColors borderColor,
-                                     int fixedRowCount,
-                                     int fixedColumnCount) {
-                CellStyle cellStyle = ExcelCellUtil.getCellStyle(book);
-                XSSFFont font = (XSSFFont) ExcelCellUtil.getFont(book);
-
-                // style - static
-                font.setBold(true);
-                ExcelSheetUtil.createFreezePane(sheet, fixedColumnCount, fixedRowCount);
-                ExcelCellUtil.setAlignment(cellStyle, CellStyle.ALIGN_CENTER);
-                ExcelCellUtil.setFont(cellStyle, font);
-
-                // style - dynamic
-                ExcelCellUtil.setCellColor(cellStyle, cellColor);
-                ExcelCellUtil.setCellBorder(cellStyle, borderStyle, borderColor);
-
-                FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
-                    @Override
-                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                        Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
-                        ExcelCellUtil.setCellStyle(cell, cellStyle);
-                    }
-                });
-
-                FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
-                    @Override
-                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                        Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
-                        ExcelCellUtil.setCellValue(cell, fieldInfo.getName());
-                    }
-                });
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
+                ExcelCellUtil.setCellStyle(cell, cellStyle);
+                ExcelCellUtil.setCellValue(cell, fieldInfo.getName());
             }
         });
     }
 
     /**
-     * setBodyRow(object->sheet)
+     * object -> sheet
      *
      * @param row
      * @param object
@@ -388,7 +335,7 @@ public class ExcelObjectMapper {
                 try {
                     cellValue = field.get(object);
                 } catch (IllegalAccessException e) {
-                    // * DOESN'T OCCUR (because of initElements)
+                    // * DOESN'T OCCUR (because of initFieldInfos)
                 }
 
                 // nullable
@@ -484,17 +431,6 @@ public class ExcelObjectMapper {
                 isGroup = false;
             }
 
-            // first group validation
-            // already done (in object -> sheet or sheet -> object)
-            /*if (isFirstGroup) {
-                for (int i = 0; i < objects.size(); i++) {
-                    T object = objects.get(i);
-                    Object cellValue = ReflectionUtil.getFieldValue(field, object);
-                    // NullPointerException - can't exist null in firstGroup
-                    if (cellValue == null) { }
-                }
-            }*/
-
             Object preValue = ReflectionUtil.getFieldValue(field, objects.get(0));
             for (int i = 0; i < objects.size(); i++) {
                 T object = objects.get(i);
@@ -527,7 +463,7 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * setRegion
+     * Region 설정
      *
      * @param regionEndPointMapByGroup
      */
@@ -557,9 +493,9 @@ public class ExcelObjectMapper {
     /**
      * setDropDown
      *
-     * @param size
+     * @param objectSize
      */
-    private void setDropDown(int size) {
+    private void setDropDown(int objectSize) {
         Map<Field, FieldInfo> regionFieldInfo = FieldInfoUtil.extractFieldInfoByDropdown(this.fieldInfoMap);
         List<Map.Entry<Field, FieldInfo>> regionFieldInfoList = FieldInfoUtil.getElementListWithSort(regionFieldInfo);
         Iterator<Map.Entry<Field, FieldInfo>> iterator = regionFieldInfoList.iterator();
@@ -569,32 +505,24 @@ public class ExcelObjectMapper {
             FieldInfo fieldInfo = entry.getValue();
             if (field.getType().isEnum()) {
                 // [1] static (enum)
-                for (int i = 0; i < size; i++) {
-                    CellRangeAddressList region = ExcelSheetUtil.getRegion(
-                            (i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
-                    ExcelSheetUtil.setDropdown(
-                            this.sheet,
-                            this.dvHelper,
-                            this.fieldDropdownMap.get(field),
-                            region);
+                for (int i = 0; i < objectSize; i++) {
+                    CellRangeAddressList region = ExcelSheetUtil.getRegion((i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
+                    ExcelSheetUtil.setDropdown(this.sheet, this.dvHelper, this.fieldDropdownMap.get(field), region);
                 }
             } else {
                 // [2] dynamic
-                for (int i = 0; i < size; i++) {
-                    CellRangeAddressList region = ExcelSheetUtil.getRegion(
-                            (i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
-                    ExcelSheetUtil.setDropdown(
-                            this.sheet,
-                            this.dvHelper,
-                            this.fieldDropdownMap.get(field),
-                            region);
+                for (int i = 0; i < objectSize; i++) {
+                    CellRangeAddressList region = ExcelSheetUtil.getRegion((i + 1), (i + 1), fieldInfo.getIndex(), fieldInfo.getIndex());
+                    ExcelSheetUtil.setDropdown(this.sheet, this.dvHelper, this.fieldDropdownMap.get(field), region);
                 }
             }
         }
     }
 
     /**
-     * checkHeader
+     * check header name
+     *
+     * @throws EOMHeaderException
      */
     private void checkHeader(Row row) throws EOMHeaderException {
         final Map<Field, FieldInfo> fieldInfoMap = this.fieldInfoMap;
@@ -603,10 +531,8 @@ public class ExcelObjectMapper {
             public void getFieldInfo(Field field, FieldInfo fieldInfo) {
                 Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
-                if (fieldInfo.getName().equals(cellValue) == false) {
-                    // * THROW WRONG_HEADER_EXCEPTION
-                    throw new EOMHeaderException(null);
-                }
+                if (fieldInfo.getName().equals(cellValue) == false)
+                    throw new EOMHeaderException(null); // * THROW WRONG_HEADER_EXCEPTION
             }
         });
     }
@@ -851,10 +777,9 @@ public class ExcelObjectMapper {
                                     return "";
                                 }
                             })
-                            .reduce((a, b) -> a + "&&" + b)
+                            .reduce((a, b) -> a + ExcelConstant.UNIQUE_DILIMETER + b)
                             .get();
                     if (uniqueValueStorage.contains(result + "")) {
-                        // TODO need to column guide
                         Map<String, String> args = EOMNotUniqueException.getArguments(result, i);
                         EOMNotUniqueException e = new EOMNotUniqueException(args);
                         bodyException.addDetail(e);

@@ -3,7 +3,11 @@ package com.excel.eom.util;
 import com.excel.eom.annotation.ExcelColumn;
 import com.excel.eom.annotation.ExcelObject;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
-import com.excel.eom.util.callback.ExcelObjectInfoCallback;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 
 import static com.excel.eom.util.CollectionUtil.isEmpty;
 
@@ -20,19 +24,6 @@ public class ReflectionUtil {
             return field.get(object);
         } catch (IllegalAccessException e) {
             return null;
-        }
-    }
-
-    public static void getClassInfo(Class<?> clazz, ExcelObjectInfoCallback callback) {
-        if (clazz.isAnnotationPresent(ExcelObject.class)) {
-            callback.getClassInfo(
-                    clazz.getAnnotation(ExcelObject.class).name(),
-                    clazz.getAnnotation(ExcelObject.class).cellColor(),
-                    clazz.getAnnotation(ExcelObject.class).borderStyle(),
-                    clazz.getAnnotation(ExcelObject.class).borderColor(),
-                    clazz.getAnnotation(ExcelObject.class).fixedRowCount(),
-                    clazz.getAnnotation(ExcelObject.class).fixedColumnCount()
-            );
         }
     }
 
