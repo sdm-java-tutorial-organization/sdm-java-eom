@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING) // 사전식순서 (a_, b_, c_, ...)
 public class ExcelObjectMapperDropdownTest {
 
@@ -49,10 +51,9 @@ public class ExcelObjectMapperDropdownTest {
     @ExcelObject(
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
-            borderColor = IndexedColors.BLACK,
-            borderStyle = CellStyle.BORDER_THIN)
+            borderColor = IndexedColors.BLACK)
     @UniqueKey({"name", "planet"})
-    public static class ExcelObjectDropdown {
+    public static class ExcelObjectEnumDropdown {
 
         @ExcelColumn(name = "NAME", index=0)
         public String name;
@@ -71,12 +72,8 @@ public class ExcelObjectMapperDropdownTest {
     @ExcelObject(
             name = "EOM",
             cellColor = IndexedColors.YELLOW,
-            borderColor = IndexedColors.BLACK,
-            borderStyle = CellStyle.BORDER_THIN)
-    @UniqueKeys({
-            @UniqueKey("name"),
-            @UniqueKey("count")
-    })
+            borderColor = IndexedColors.BLACK)
+    @UniqueKeys({ @UniqueKey("name"), @UniqueKey("count") })
     public static class ExcelObjectDynamicDropdown {
 
         @ExcelColumn(name = "NAME", index=0)
@@ -91,16 +88,16 @@ public class ExcelObjectMapperDropdownTest {
     }
 
     @Test
-    public void a_buildObjectWithDropdown() throws Throwable {
-        List<ExcelObjectDropdown> items = Arrays.asList(
-                new ExcelObjectDropdown("nameA", 1, Planet.Earth),
-                new ExcelObjectDropdown("nameB", 2, Planet.Earth),
-                new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
+    public void a_buildObjectEnumDropdown() throws Throwable {
+        List<ExcelObjectEnumDropdown> items = Arrays.asList(
+                new ExcelObjectEnumDropdown("nameA", 1, Planet.Earth),
+                new ExcelObjectEnumDropdown("nameB", 2, Planet.Earth),
+                new ExcelObjectEnumDropdown("nameC", 3, Planet.Asgard)
         );
         Workbook bookDropdown = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDropdown, "sheet");
         ExcelObjectMapper.init()
-                .initModel(ExcelObjectDropdown.class)
+                .initModel(ExcelObjectEnumDropdown.class)
                 .initBook(bookDropdown)
                 .initSheet(sheet)
                 .buildObject(items);
@@ -109,11 +106,11 @@ public class ExcelObjectMapperDropdownTest {
     }
 
     @Test
-    public void b_buildSheetWithDropdown() throws Throwable {
+    public void b_buildSheetEnumDropdown() throws Throwable {
         Workbook bookDropdown = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_DROPDOWN));
         Sheet sheet = ExcelSheetUtil.getSheet(bookDropdown, 0);
-        List<ExcelObjectDropdown> items = ExcelObjectMapper.init()
-                .initModel(ExcelObjectDropdown.class)
+        List<ExcelObjectEnumDropdown> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectEnumDropdown.class)
                 .initBook(bookDropdown)
                 .initSheet(sheet)
                 .buildSheet();
@@ -123,45 +120,46 @@ public class ExcelObjectMapperDropdownTest {
     }
 
     @Test
-    public void a_buildObjectWithDropdownThrowNotContain() throws Throwable {
-        List<ExcelObjectDropdown> items = Arrays.asList(
-                new ExcelObjectDropdown("nameA", 1, Planet.Earth),
-                new ExcelObjectDropdown("nameB", 2, null),
-                new ExcelObjectDropdown("nameC", 3, Planet.Asgard)
+    public void a_buildObjectEnumDropdownThrowNotContain() throws Throwable {
+        List<ExcelObjectEnumDropdown> items = Arrays.asList(
+                new ExcelObjectEnumDropdown("nameA", 1, Planet.Earth),
+                new ExcelObjectEnumDropdown("nameB", 2, null),
+                new ExcelObjectEnumDropdown("nameC", 3, Planet.Asgard)
         );
-
         Workbook bookDropdownNotContain = new SXSSFWorkbook();
         Sheet sheet = ExcelSheetUtil.initSheet(bookDropdownNotContain, "sheet");
         try {
             ExcelObjectMapper.init()
-                    .initModel(ExcelObjectDropdown.class)
+                    .initModel(ExcelObjectEnumDropdown.class)
                     .initBook(bookDropdownNotContain)
                     .initSheet(sheet)
                     .buildObject(items);
         } catch (EOMBodyException e) {
-            for(EOMCellException detail : e.getDetail()) {
-                detail.printStackTrace();
-            }
+            long nullPointerCount = e.getDetail().stream()
+                    .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .count();
+            assertEquals(nullPointerCount, 1);
         }
         ExcelSheetUtil.print(sheet);
         ExcelFileUtil.writeExcel(bookDropdownNotContain, DEPLOY_THROW_NONCONTAIN);
     }
 
     @Test
-    public void b_buildSheetWithDropdownThrowNotContain() throws Throwable {
+    public void b_buildSheetEnumDropdownThrowNotContain() throws Throwable {
         Workbook bookDropdownNotContain = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_THROW_NONCONTAIN));
         Sheet sheet = ExcelSheetUtil.getSheet(bookDropdownNotContain, 0);
-        List<ExcelObjectDropdown> items = null;
+        List<ExcelObjectEnumDropdown> items = null;
         try {
             items = ExcelObjectMapper.init()
-                    .initModel(ExcelObjectDropdown.class)
+                    .initModel(ExcelObjectEnumDropdown.class)
                     .initBook(bookDropdownNotContain)
                     .initSheet(sheet)
                     .buildSheet();
         } catch (EOMBodyException e) {
-            for(EOMCellException detail : e.getDetail()) {
-                detail.printStackTrace();
-            }
+            long nullPointerCount = e.getDetail().stream()
+                    .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .count();
+            assertEquals(nullPointerCount, 1);
         }
         items.stream().forEach(item -> {
             System.out.println(item.toString());
@@ -169,7 +167,7 @@ public class ExcelObjectMapperDropdownTest {
     }
 
     @Test
-    public void a_buildObjectWithDynamicDropdown() throws Throwable {
+    public void a_buildObjectDynamicDropdown() throws Throwable {
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
@@ -193,14 +191,13 @@ public class ExcelObjectMapperDropdownTest {
     }
 
     @Test
-    public void b_buildSheetWithDynamicDropdown() throws Throwable {
+    public void b_buildSheetDynamicDropdown() throws Throwable {
         Workbook bookDynamicDropdown = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_DROPDOWN_DYNAMIC));
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
         optionMap.put("cherry", "c");
         Dropdown dropdown = new Dropdown("dropdownKey", optionMap);
-
         Sheet sheet = ExcelSheetUtil.getSheet(bookDynamicDropdown, 0);
         List<ExcelObjectDynamicDropdown> items = ExcelObjectMapper.init()
                 .initModel(ExcelObjectDynamicDropdown.class)
@@ -211,11 +208,10 @@ public class ExcelObjectMapperDropdownTest {
         items.stream().forEach(item -> {
             System.out.println(item.toString());
         });
-        ExcelSheetUtil.print(sheet);
     }
 
     @Test
-    public void a_buildObjectWithDynamicDropdownThrowNotContain() throws Throwable {
+    public void a_buildObjectDynamicDropdownThrowNotContain() throws Throwable {
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
@@ -236,16 +232,17 @@ public class ExcelObjectMapperDropdownTest {
                     .initDropDowns(dropdown)
                     .buildObject(items);
         } catch (EOMBodyException e) {
-            for(EOMCellException detail : e.getDetail()) {
-                detail.printStackTrace();
-            }
+            long nullPointerCount = e.getDetail().stream()
+                    .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .count();
+            assertEquals(nullPointerCount, 3);
         }
         ExcelSheetUtil.print(sheet);
         ExcelFileUtil.writeExcel(bookDynamicDropdown, DEPLOY_THROW_NONCONTAIN_DYNAMIC);
     }
 
     @Test
-    public void b_buildSheetWithDynamicDropdownThrowNotContain() throws Throwable {
+    public void b_buildSheetDynamicDropdownThrowNotContain() throws Throwable {
         Map optionMap = new HashMap<>();
         optionMap.put("apple", "a");
         optionMap.put("banana", "b");
@@ -262,14 +259,14 @@ public class ExcelObjectMapperDropdownTest {
                     .initDropDowns(dropdown)
                     .buildSheet();
         } catch (EOMBodyException e) {
-            for(EOMCellException detail : e.getDetail()) {
-                detail.printStackTrace();
-            }
+            long nullPointerCount = e.getDetail().stream()
+                    .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .count();
+            assertEquals(nullPointerCount, 3);
         }
         items.stream().forEach(item -> {
             System.out.println(item.toString());
         });
-        ExcelSheetUtil.print(sheet);
     }
 
 }

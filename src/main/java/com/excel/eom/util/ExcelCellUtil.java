@@ -50,6 +50,7 @@ public class ExcelCellUtil {
                 result = cell.getErrorCellValue();
                 break;
             case Cell.CELL_TYPE_BLANK:
+                result = "";
                 break;
         }
 

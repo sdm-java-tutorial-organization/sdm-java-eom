@@ -2,10 +2,8 @@ package com.excel.eom.util;
 
 import com.excel.eom.annotation.ExcelColumn;
 import com.excel.eom.model.FieldInfo;
-import com.excel.eom.tutorial.ExcelObjectDemo;
 import com.excel.eom.tutorial.Planet;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
-import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.junit.Test;
 

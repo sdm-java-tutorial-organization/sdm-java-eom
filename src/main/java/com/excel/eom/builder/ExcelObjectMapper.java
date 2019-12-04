@@ -678,6 +678,7 @@ public class ExcelObjectMapper {
                             /*cellValue = null;*/
                             if (fieldInfo.getNullable() && (cellValue == null || cellValue.equals(""))) {
                                 cellValue = null;
+                                return;
                             } else {
                                 Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
                                 EOMNotContainException e = new EOMNotContainException(args);
@@ -700,6 +701,7 @@ public class ExcelObjectMapper {
                     } else {
                         if (fieldInfo.getNullable()) {
                             cellValue = null;
+                            return;
                         } else {
                             Map<String, String> args = EOMNotContainException.getArguments(cellValue, row.getRowNum(), fieldInfo.getIndex());
                             EOMNotContainException e = new EOMNotContainException(args);

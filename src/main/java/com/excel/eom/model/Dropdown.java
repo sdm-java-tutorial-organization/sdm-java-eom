@@ -1,9 +1,6 @@
 package com.excel.eom.model;
 
-import com.excel.eom.exception.body.EOMNotContainException;
 import lombok.Getter;
-
-import java.util.Iterator;
 import java.util.Map;
 
 @Getter
@@ -16,5 +13,7 @@ public class Dropdown {
         this.key = key;
         this.options = options;
     }
+
+
 
 }
