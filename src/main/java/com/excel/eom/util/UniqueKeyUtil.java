@@ -1,10 +1,8 @@
 package com.excel.eom.util;
 
-import com.excel.eom.annotation.ExcelObject;
 import com.excel.eom.annotation.UniqueKey;
 import com.excel.eom.annotation.UniqueKeys;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +12,7 @@ import java.util.stream.Collectors;
 public class UniqueKeyUtil {
 
     /**
-     * getUniqueValues
+     * getUniqueValues - 설정된 UniqueKey 항목을 리스트로 반환
      *
      * @param clazz
      * @return List[key]

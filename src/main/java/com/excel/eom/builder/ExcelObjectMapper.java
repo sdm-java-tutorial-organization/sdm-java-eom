@@ -384,8 +384,7 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * checkRegion - pre region validation (EndPoint is after the last point)
-     *
+     * 그룹별로 영역의 종료점(EndPoint)만 모아서 반환
      *
      * @param objects
      * @return Map[GroupLevel(int), List[EndPoint(int)]]
@@ -707,7 +706,8 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * validateUniqueKey
+     * validateUniqueKey - @UniqueKey 설정된 필드가 보장되는지 검증하는 함수
+     *
      *
      * @param objects
      * @param bodyException
@@ -728,41 +728,36 @@ public class ExcelObjectMapper {
             throw new EOMWrongUniqueFieldException(args);
         }
 
-        // init <>
-        Map<List<Field>, Set<String>> uniqueKeyStorage = new HashMap<>();
-        Map<List<Field>, Integer> uniqueKeyGroupLevelStorage = new HashMap<>();
+        // init uniqueKey, minGroup
+        Map<List<Field>, Integer> uniqueKeyGroupLevelStorage = new HashMap<>(); // 복합키 필드중 MIN 그룹값 저장소
         for (List<String> uniqueKey : uniqueKeys) {
             List<Field> key = new ArrayList<>();
-            List<Integer> groups = new ArrayList<>();
-            for (String fieldElement : uniqueKey) {
-                FieldInfoUtil.getEachFieldInfo(this.fieldInfoMap, new FieldInfoCallback() {
-                    @Override
-                    public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                        if (field.getName().equals(fieldElement)) {
-                            key.add(field);
-                            groups.add(fieldInfo.getGroup());
-                        }
-                    }
-                });
-            }
-            uniqueKeyStorage.put(key, new HashSet<>());
-            uniqueKeyGroupLevelStorage.put(key, groups.stream().min(Integer::min).get());
+            int minGroupInUniqueKey = this.fieldInfoMap.entrySet().stream()
+                    .filter(entry -> uniqueKey.indexOf(entry.getKey().getName()) > -1)
+                    .map(entry -> {
+                        key.add(entry.getKey());
+                        return entry.getValue().getGroup();
+                    })
+                    .min(Integer::min).get();
+            uniqueKeyGroupLevelStorage.put(key, minGroupInUniqueKey);
         }
 
         // unique validate
-        for (int i = 0; i < objects.size(); i++) {
-            T object = objects.get(i);
-            Iterator<Map.Entry<List<Field>, Set<String>>> iterator = uniqueKeyStorage.entrySet().stream().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<List<Field>, Set<String>> entry = iterator.next();
-                List<Field> uniqueKeyByFields = entry.getKey();
-                Set<String> uniqueValueStorage = entry.getValue();
+        Iterator<Map.Entry<List<Field>, Integer>> iterator = uniqueKeyGroupLevelStorage.entrySet().stream().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<List<Field>, Integer> entry = iterator.next();
+            List<Field> uniqueKeyByFields = entry.getKey();
+            Set<String> uniqueValueStorage = new HashSet<>();
+            Integer minGroupInUniqueKey = entry.getValue();
+            List<Integer> groupEndPoint = regionEndPointMapByGroup.get(minGroupInUniqueKey);
 
-                int uniqueKeyGroupLevel = uniqueKeyGroupLevelStorage.get(uniqueKeyByFields);
-                List<Integer> groupEndPoint = regionEndPointMapByGroup.get(uniqueKeyGroupLevel);
+            for (int i = 0; i < objects.size(); i++) {
+                T object = objects.get(i);
 
                 // isLowerGroup ? OR isFirstGroup ?
-                if(uniqueKeyGroupLevel == 0 || groupEndPoint.indexOf(i) > 0) {
+                if(minGroupInUniqueKey == 0 || groupEndPoint.indexOf(i) > 0) {
+
+                    // UniqueKey 조합하여 중복되는 데이터가 있는지 확인하는 절차
                     Object result = uniqueKeyByFields.stream()
                             .map(field -> {
                                 try {
@@ -787,9 +782,9 @@ public class ExcelObjectMapper {
                         uniqueValueStorage.add(result + "");
                     }
                 }
-
             }
         }
+
     }
 
 }

@@ -109,6 +109,11 @@ public class ExcelObjectMapperTest {
             EOMCellException cellException = e.getDetail().get(0);
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotNullException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 2);
         }
@@ -131,6 +136,11 @@ public class ExcelObjectMapperTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotNullException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 2);
         }
@@ -149,9 +159,13 @@ public class ExcelObjectMapperTest {
                     .initModel(ExcelObjectBasic.class).initBook(bookNotUnique).initSheet(sheet)
                     .buildObject(items);
         } catch (EOMBodyException e) {
-            /*e.printStackTrace();*/
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotUniqueException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 1);
         }
@@ -174,6 +188,11 @@ public class ExcelObjectMapperTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotUniqueException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 1);
         }

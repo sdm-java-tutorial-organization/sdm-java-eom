@@ -137,6 +137,11 @@ public class ExcelObjectMapperDropdownTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 1);
         }
@@ -158,6 +163,11 @@ public class ExcelObjectMapperDropdownTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 1);
         }
@@ -234,6 +244,11 @@ public class ExcelObjectMapperDropdownTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 3);
         }
@@ -261,6 +276,11 @@ public class ExcelObjectMapperDropdownTest {
         } catch (EOMBodyException e) {
             long nullPointerCount = e.getDetail().stream()
                     .filter(detail -> detail.getClass().getSimpleName().equals("EOMNotContainException"))
+                    .map(detail -> {
+                        System.out.println(detail.getMessage());
+                        System.out.println(detail.getArgs());
+                        return detail;
+                    })
                     .count();
             assertEquals(nullPointerCount, 3);
         }
