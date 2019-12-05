@@ -13,8 +13,11 @@ public class FieldInfo implements Comparable<FieldInfo> {
     public static final String INIT_DROPDOWN = "";
 
     private String name;
+
     private Integer index;
+
     private Integer group;
+
     private String dropdown;
 
     @Setter

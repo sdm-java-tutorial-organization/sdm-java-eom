@@ -12,6 +12,7 @@ import com.excel.eom.exception.body.EOMNotContainException;
 import com.excel.eom.exception.body.EOMNotNullException;
 import com.excel.eom.model.FieldInfo;
 import com.excel.eom.model.Dropdown;
+import com.excel.eom.model.GroupRegionList;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.FieldInfoCallback;
@@ -100,42 +101,46 @@ public class ExcelObjectMapper {
      * @param objects
      */
     public <T> void buildObject(List<T> objects) throws EOMDevelopmentException, EOMBodyException {
-        if (this.book != null && this.sheet != null && this.clazz != null && objects != null && objects.size() > 0) {
-
-            T t = objects.get(0);
-            if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
-                Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
-                throw new EOMWrongListException(args);
-            }
+        if (this.book != null && this.sheet != null && this.clazz != null && objects != null) {
 
             validateAnnotation(fieldInfoMap);
-            initFieldInfos();
+            initFieldInfo(fieldInfoMap);
             presetSheet();
 
             // [h]eader
             Row hRow = ExcelRowUtil.initRow(this.sheet, 0);
             setHeaderRow(hRow);
 
-            // [b]ody
-            EOMBodyException bodyException = new EOMBodyException();
-            for (int i = 0; i < objects.size(); i++) {
-                T object = objects.get(i);
-                Row bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
-                setBodyRow(bRow, object, bodyException);
-            }
+            if(objects.size() > 0) {
 
-            // [r]egion
-            Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(objects);
-            setRegion(regionEndPointMapByGroup);
+                T t = objects.get(0);
+                if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
+                    Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
+                    throw new EOMWrongListException(args);
+                }
 
-            // [u]nique
-            validateUniqueKey(objects, regionEndPointMapByGroup, bodyException);
+                // [b]ody
+                EOMBodyException bodyException = new EOMBodyException();
+                for (int i = 0; i < objects.size(); i++) {
+                    T object = objects.get(i);
+                    Row bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
+                    setBodyRow(bRow, object, bodyException);
+                }
 
-            // [d]ropdown
-            setDropDown(objects.size());
+                // [r]egion
+                GroupRegionList groupRegionList = checkRegion(objects);
+                setRegion(groupRegionList);
 
-            if (bodyException.countDetail() > 0) {
-                throw bodyException;
+                // [u]nique
+                validateUniqueKey(objects, groupRegionList, bodyException);
+
+                // [d]ropdown
+                setDropDown(objects.size());
+
+                if (bodyException.countDetail() > 0) {
+                    throw bodyException;
+                }
+
             }
         }
     }
@@ -148,7 +153,7 @@ public class ExcelObjectMapper {
         List<T> items = new ArrayList<>();
 
         if (this.sheet != null && this.clazz != null) {
-            initFieldInfos();
+            initFieldInfo(fieldInfoMap);
             int sheetHeight = ExcelSheetUtil.getSheetHeight(this.sheet);
             if (sheetHeight > 1) {
 
@@ -167,8 +172,8 @@ public class ExcelObjectMapper {
                 }
 
                 // [u]nique - bodyException
-                Map<Integer, List<Integer>> regionEndPointMapByGroup = checkRegion(items);
-                validateUniqueKey(items, regionEndPointMapByGroup, bodyException);
+                GroupRegionList groupRegionList = checkRegion(items);
+                validateUniqueKey(items, groupRegionList, bodyException);
 
                 if (bodyException.countDetail() > 0) {
                     throw bodyException;
@@ -181,10 +186,10 @@ public class ExcelObjectMapper {
     // ===================== private =====================
 
     /**
-     * FieldInfo 초기화함수
-     * 
+     * FieldInfo 초기화함수 (ExcelObject 내에 정의된 Field 값들을 FieldInfo 모델로 이동)
+     *
      */
-    private void initFieldInfos() throws EOMDevelopmentException {
+    private void initFieldInfo(Map<Field, FieldInfo> fieldInfoMap) throws EOMDevelopmentException {
         if (this.clazz != null) {
             try {
                 Object instance = this.clazz.newInstance();
@@ -209,7 +214,7 @@ public class ExcelObjectMapper {
     }
 
     /**
-     * validateGroup - 그룹에서 가져야할 규칙이 올바르게 적용되어 있는지 확인
+     * 순서(index) & 그룹(group) 에서 가져야할 규칙이 올바르게 적용되어 있는지 확인
      *
      */
     private void validateAnnotation(Map<Field, FieldInfo> fieldInfoMap) throws EOMDevelopmentException {
@@ -335,7 +340,7 @@ public class ExcelObjectMapper {
                 try {
                     cellValue = field.get(object);
                 } catch (IllegalAccessException e) {
-                    // * DOESN'T OCCUR (because of initFieldInfos)
+                    // * DOESN'T OCCUR (because of initFieldInfo)
                 }
 
                 // nullable
@@ -387,10 +392,11 @@ public class ExcelObjectMapper {
      * 그룹별로 영역의 종료점(EndPoint)만 모아서 반환
      *
      * @param objects
-     * @return Map[GroupLevel(int), List[EndPoint(int)]]
+     * @return List[GroupRegion]
      */
-    private <T> Map<Integer, List<Integer>> checkRegion(List<T> objects) {
-        Map<Integer, List<Integer>> regionEndPointMapByGroup = new HashMap<>(); /* Map<Group, List<EndPoint>> */
+    private <T> GroupRegionList checkRegion(List<T> objects) {
+        GroupRegionList groupRegions = new GroupRegionList();
+        /*Map<Integer, List<Integer>> regionEndPointMapByGroup = new HashMap<>(); *//* Map<Group, List<EndPoint>> */
 
         // extract group column & sort
         Map<Field, FieldInfo> regionFieldInfo = FieldInfoUtil.extractFieldInfoByGroup(this.fieldInfoMap);
@@ -414,12 +420,12 @@ public class ExcelObjectMapper {
             boolean isGroup, isFirstGroup = false;
             if (fieldInfo.getGroup() > 0) {
                 // [1] is Group
-                if (regionEndPointMapByGroup.get(fieldInfo.getGroup()) == null) {
+                if(groupRegions.isContainGroup(fieldInfo.getGroup()) == false) {
                     // [1.1] is FirstGroup
                     isFirstGroup = true;
                     preEndPoints = nowEndPoints;
                     nowEndPoints = new ArrayList<>();
-                    regionEndPointMapByGroup.put(fieldInfo.getGroup(), nowEndPoints);
+                    groupRegions.addGroupRegion(fieldInfo.getGroup(), nowEndPoints);
                 } else {
                     // [1.2] non FirstGroup
                     isFirstGroup = false;
@@ -458,16 +464,17 @@ public class ExcelObjectMapper {
                 nowEndPoints.add((objects.size() + 1) - 1); // * pre cell merge (-1)
             }
         }
-        return regionEndPointMapByGroup;
+        return groupRegions;
     }
 
     /**
      * Region 설정
      *
-     * @param regionEndPointMapByGroup
+     * @param groupRegionList
      */
-    private void setRegion(Map<Integer, List<Integer>> regionEndPointMapByGroup) {
-        Iterator iterator = regionEndPointMapByGroup.entrySet().stream().iterator();
+    private void setRegion(GroupRegionList groupRegionList) {
+
+        /*Iterator iterator = regionEndPointMapByGroup.entrySet().stream().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, List<Integer>> entry = (Map.Entry<Integer, List<Integer>>) iterator.next();
             Integer group = entry.getKey();
@@ -486,7 +493,23 @@ public class ExcelObjectMapper {
                     }
                 }
             });
-        }
+        }*/
+
+        FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
+            @Override
+            public void getFieldInfo(Field field, FieldInfo fieldInfo) {
+                List<Integer> endPoints = groupRegionList.findGroupRegionEndPoint(fieldInfo.getGroup());
+                if (endPoints.size() > 0) {
+                    int startPoint = 1;
+                    for (int endPoint : endPoints) {
+                        if (endPoint - startPoint > 0) {
+                            ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, fieldInfo.getIndex(), fieldInfo.getIndex());
+                        }
+                        startPoint = ++endPoint;
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -550,9 +573,9 @@ public class ExcelObjectMapper {
         try {
             instance = this.clazz.newInstance();
         } catch (InstantiationException e) {
-            // * DOESN'T OCCUR (initElement)
+            // * DOESN'T OCCUR (initFieldInfo)
         } catch (IllegalAccessException e) {
-            // * DOESN'T OCCUR (initElement)
+            // * DOESN'T OCCUR (initFieldInfo)
         }
 
         final Sheet sheet = this.sheet;
@@ -713,7 +736,7 @@ public class ExcelObjectMapper {
      * @param bodyException
      */
     private <T> void validateUniqueKey(List<T> objects,
-                                       Map<Integer, List<Integer>> regionEndPointMapByGroup,
+                                       GroupRegionList groupRegionList,
                                        EOMBodyException bodyException) throws EOMDevelopmentException {
         List<List<String>> uniqueKeys = UniqueKeyUtil.getUniqueValues(clazz);
         if (uniqueKeys.size() == 0) {
@@ -749,7 +772,7 @@ public class ExcelObjectMapper {
             List<Field> uniqueKeyByFields = entry.getKey();
             Set<String> uniqueValueStorage = new HashSet<>();
             Integer minGroupInUniqueKey = entry.getValue();
-            List<Integer> groupEndPoint = regionEndPointMapByGroup.get(minGroupInUniqueKey);
+            List<Integer> groupEndPoint = groupRegionList.findGroupRegionEndPoint(minGroupInUniqueKey);
 
             for (int i = 0; i < objects.size(); i++) {
                 T object = objects.get(i);

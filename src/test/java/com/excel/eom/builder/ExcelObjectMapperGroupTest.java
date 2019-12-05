@@ -30,7 +30,7 @@ public class ExcelObjectMapperGroupTest {
             "src/main/resources/deploy/group/deploy_group_2_throw.xlsx";
 
     static String DEPLOY_GROUP_3 =
-        "src/main/resources/deploy/deploy_group_3.xlsx";
+            "src/main/resources/deploy/group/deploy_group_3.xlsx";
 
     @Data
     @NoArgsConstructor // * must have

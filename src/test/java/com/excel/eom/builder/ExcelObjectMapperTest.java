@@ -31,6 +31,9 @@ public class ExcelObjectMapperTest {
     static String DEPLOY_BASIC =
             "src/main/resources/deploy/basic/deploy_basic.xlsx";
 
+    static String DEPLOY_SIZE_ZERO =
+            "src/main/resources/deploy/basic/deploy_size_zero.xlsx";
+
     static String DEPLOY_NULLABLE =
             "src/main/resources/deploy/basic/deploy_nullable.xlsx";
 
@@ -86,6 +89,18 @@ public class ExcelObjectMapperTest {
         items.stream().forEach(item -> {
             System.out.println(item.toString());
         });
+    }
+
+    @Test
+    public void a_buildObjectSizeZero() throws Throwable {
+        List<ExcelObjectBasic> items = new ArrayList<>();
+        Workbook book = new SXSSFWorkbook();
+        Sheet sheet = ExcelSheetUtil.initSheet(book, "sheet");
+        ExcelObjectMapper.init()
+                .initModel(ExcelObjectBasic.class).initBook(book).initSheet(sheet)
+                .buildObject(items);
+        ExcelSheetUtil.print(sheet);
+        ExcelFileUtil.writeExcel(book, DEPLOY_SIZE_ZERO);
     }
 
     @Test

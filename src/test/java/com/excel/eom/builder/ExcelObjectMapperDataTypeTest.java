@@ -125,7 +125,9 @@ public class ExcelObjectMapperDataTypeTest {
         Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
         ExcelSheetUtil.print(sheet);
         List<ExcelObjectLong> items = ExcelObjectMapper.init()
-                .initModel(ExcelObjectLong.class).initBook(book).initSheet(sheet)
+                .initModel(ExcelObjectLong.class)
+                .initBook(book)
+                .initSheet(sheet)
                 .buildSheet();
         items.stream().forEach(item -> {
             System.out.println(item.toString());

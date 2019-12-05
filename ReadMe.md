@@ -465,7 +465,7 @@ EOMException
 |                         | EOMNotNullException             | 302  | Null을 허용하지 않음                                         |
 |                         | EOMWrongDataTypeException       | 303  | 데이터 타입이 올바르지 않음                                  |
 |                         | EOMNotContainException          | 304  | Dropdown에 없는 데이터가 전달                                |
-|                         | EOMNotUniqueException           | 305  |                                                              |
+|                         | EOMNotUniqueException           | 305  | @UniqueKey 애너테이션에 설정된 항목이 <br />유니크가 보장되지 않을 때 발생하는 에러 |
 
 
 
@@ -499,7 +499,6 @@ Body에서 발생하는 예외는 데이터 항목이 올바르지 않을 때 �
 >   https://qiita.com/tool-taro/items/4b3c802bb114a9110ecb
 > - POI 라이브러리에 의존성이 있는 함수는 모두 Util로 통합하여 개발하였습니다. 
 >   차후 발생할 수 있는 POI 라이브러리 변경에  대응하기 위함입니다.
->- 메모리 누수가 발생할 수 있는지 성능 튜닝이 필요합니다.
-> - 현재는 Database의 Relation을 역정규화를 통해 하나의 Object에서만 표현할 수 있습니다.
+>- 현재는 Database의 Relation을 역정규화를 통해 하나의 Object에서만 표현할 수 있습니다.
 > 이후에 독립적으로 존재하는 N개의 Object를 조합해서 Excel로 표현하는 기법 또한 빌드업할 예정입니다. (Major Update)
 
