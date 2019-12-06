@@ -13,8 +13,8 @@ public class EOMWrongGroupException extends EOMDevelopmentException {
     public static final String MESSAGE = "The Group option is invalid.";
     public static final int CODE = 103;
 
-    public EOMWrongGroupException(Map<String, String> args) {
-        super(MESSAGE, null, CODE, args);
+    public EOMWrongGroupException(String sheet, Map<String, String> args) {
+        super(MESSAGE, null, CODE, sheet, args);
     }
 
     /**

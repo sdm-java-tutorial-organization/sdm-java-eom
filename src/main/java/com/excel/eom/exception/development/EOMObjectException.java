@@ -16,8 +16,8 @@ public class EOMObjectException extends EOMDevelopmentException {
     public static final String MESSAGE = "The Excel Object is invalid.";
     public static final int CODE = 101;
 
-    public EOMObjectException(Map<String, String> args) {
-        super(MESSAGE, null, CODE, args);
+    public EOMObjectException(String sheet, Map<String, String> args) {
+        super(MESSAGE, null, CODE, sheet, args);
     }
 
     /**

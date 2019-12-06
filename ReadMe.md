@@ -458,7 +458,7 @@ EOMException
 |                         | EOMWrongGroupException          | 103  | Group 옵션이 올바르지 않음<br />앞 선 Index 옵션이라면 상위 Group 옵션 |
 |                         | EOMWrongUniqueFieldException    | 104  | @UniqueKey 어노테이션에서 잘못된 필드 존재                   |
 |                         | EOMNotFoundDropdownKeyException | 105  | 동적 Dropdown Key가 올바르지 않음                            |
-|                         | EOMWrongListException           | 1    | 초기화된 객체 클래스와 빌드하려는 목록의  클래스가 다를 때   |
+|                         | EOMWrongListException           | 106  | 초기화된 객체 클래스와 빌드하려는 목록의  클래스가 다를 때   |
 | EOMHeaderException      | EOMHeaderException              | 201  | Header에서 발생하는 예외                                     |
 |                         | EOMNotFoundDropdownKeyException | 202  | 초기화된 동적 Dropdown이 없을 때 발생하는 에러               |
 | EOMBodyException        | EOMCellExceltion                | 301  | EOMBodyException내에 세부항목을 나타내는 예외입니다.<br />세부항목 예외는 EOMCellException을 상속받으며,<br />Uncaught 예외는 EOMCellException을 직접 사용합니다. |

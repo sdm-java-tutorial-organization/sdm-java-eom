@@ -14,12 +14,13 @@ import java.util.Map;
 public class EOMBodyException extends EOMRuntimeException {
 
     public static final String MESSAGE = "There is an error in the Excel content. Please check the detail.";
-    public static final int CODE = 0;
+
+    public static final int CODE = 300;
 
     private List<EOMCellException> detail = new ArrayList<>();
 
-    public EOMBodyException() {
-        super(MESSAGE, null, CODE, null);
+    public EOMBodyException(String sheet) {
+        super(MESSAGE, null, CODE, sheet, null);
     }
 
     public int countDetail() {

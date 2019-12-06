@@ -12,8 +12,8 @@ public class EOMWrongListException extends EOMDevelopmentException {
     public static final String MESSAGE = "The class in the list is different from the initialized model.";
     public static final int CODE = 101;
 
-    public EOMWrongListException(Map<String, String> args) {
-        super(MESSAGE, null, CODE, args);
+    public EOMWrongListException(String sheet, Map<String, String> args) {
+        super(MESSAGE, null, CODE, sheet, args);
     }
 
     /**

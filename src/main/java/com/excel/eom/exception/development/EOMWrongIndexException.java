@@ -13,8 +13,8 @@ public class EOMWrongIndexException extends EOMDevelopmentException {
     public static final String MESSAGE = "The Index Option is invalid.";
     public static final int CODE = 101;
 
-    public EOMWrongIndexException(Map<String, String> args) {
-        super(MESSAGE, null, CODE, args);
+    public EOMWrongIndexException(String sheet, Map<String, String> args) {
+        super(MESSAGE, null, CODE, sheet, args);
     }
 
     /**

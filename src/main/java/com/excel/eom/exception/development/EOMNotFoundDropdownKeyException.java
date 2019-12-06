@@ -13,8 +13,8 @@ public class EOMNotFoundDropdownKeyException extends EOMDevelopmentException {
     public static final String MESSAGE = "Not Found Dropdown key.";
     public static final int CODE = 105;
 
-    public EOMNotFoundDropdownKeyException(Map<String, String> args) {
-        super(MESSAGE, null, CODE, args);
+    public EOMNotFoundDropdownKeyException(String sheet, Map<String, String> args) {
+        super(MESSAGE, null, CODE, sheet, args);
     }
 
     /**

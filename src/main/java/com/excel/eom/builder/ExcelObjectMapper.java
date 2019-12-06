@@ -16,6 +16,7 @@ import com.excel.eom.model.GroupRegionList;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.FieldInfoCallback;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -29,6 +30,7 @@ public class ExcelObjectMapper {
     private Class<?> clazz;
     private Workbook book;
     private Sheet sheet;
+    private String sheetName;
     private DataValidationHelper dvHelper;
     private Map<Field, FieldInfo> fieldInfoMap = new HashMap<>();
     private Map<Field, CellStyle> fieldStyleMap = new HashMap<>();
@@ -76,6 +78,7 @@ public class ExcelObjectMapper {
      */
     public ExcelObjectMapper initSheet(Sheet sheet) {
         this.sheet = sheet;
+        this.sheetName = sheet.getSheetName();
         return this;
     }
 
@@ -113,11 +116,11 @@ public class ExcelObjectMapper {
                 T t = objects.get(0);
                 if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
                     Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
-                    throw new EOMWrongListException(args);
+                    throw new EOMWrongListException(sheetName, args);
                 }
 
                 // Body
-                EOMBodyException bodyException = new EOMBodyException();
+                EOMBodyException bodyException = new EOMBodyException(sheetName);
                 for (int i = 0; i < objects.size(); i++) {
                     T object = objects.get(i);
                     Row bRow = ExcelRowUtil.initRow(this.sheet, i + 1);
@@ -158,7 +161,7 @@ public class ExcelObjectMapper {
                 checkHeader(hRow);
 
                 // [b]ody - bodyException
-                EOMBodyException bodyException = new EOMBodyException(/*items*/);
+                EOMBodyException bodyException = new EOMBodyException(sheetName);
                 Map<Field, Object> areaValues = new HashMap<>(); // region first cell value storage
                 for (int i = 1; i < sheetHeight; i++) {
                     // empty valid
@@ -191,10 +194,10 @@ public class ExcelObjectMapper {
                 Object instance = this.clazz.newInstance();
             } catch (InstantiationException e) {
                 Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName(), e.getMessage());
-                throw new EOMObjectException(args);
+                throw new EOMObjectException(sheetName, args);
             } catch (IllegalAccessException e) {
                 Map<String, String> args = EOMObjectException.getArguments(clazz.getSimpleName(), e.getMessage());
-                throw new EOMObjectException(args);
+                throw new EOMObjectException(sheetName, args);
             }
 
             ReflectionUtil.getFieldInfo(this.clazz, new ExcelColumnInfoCallback() {
@@ -233,7 +236,7 @@ public class ExcelObjectMapper {
             } else {
                 if (preIndex + 1 != columnElement.getIndex()) {
                     Map<String, String> args = EOMWrongIndexException.getArguments(clazz.getSimpleName(), columnElement.getIndex());
-                    throw new EOMWrongIndexException(args);
+                    throw new EOMWrongIndexException(sheetName, args);
                 }
                 preIndex = columnElement.getIndex();
             }
@@ -247,7 +250,7 @@ public class ExcelObjectMapper {
                     /*columnElement.setNullable(false);*/
                 } else if (preGroup < columnElement.getGroup()) {
                     Map<String, String> args = EOMWrongGroupException.getArguments(clazz.getSimpleName(), columnElement.getGroup());
-                    throw new EOMWrongGroupException(args);
+                    throw new EOMWrongGroupException(sheetName, args);
                 }
             }
         }
@@ -283,7 +286,7 @@ public class ExcelObjectMapper {
                     Map<String, Object> option = options.get(fieldInfo.getDropdown());
                     if(option == null) {
                         Map<String, String> args = EOMNotFoundDropdownKeyException.getArguments(field.getName(), fieldInfo.getDropdown());
-                        throw new EOMNotFoundDropdownKeyException(args);
+                        throw new EOMNotFoundDropdownKeyException(sheetName, args);
                     }
                     List<String> items = new ArrayList(option.keySet());
                     fieldDropdownMap.put(field, ExcelSheetUtil.getDropdown(dvHelper, items.toArray(new String[]{})));
@@ -469,28 +472,6 @@ public class ExcelObjectMapper {
      * @param groupRegionList
      */
     private void setRegion(GroupRegionList groupRegionList) {
-
-        /*Iterator iterator = regionEndPointMapByGroup.entrySet().stream().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<Integer, List<Integer>> entry = (Map.Entry<Integer, List<Integer>>) iterator.next();
-            Integer group = entry.getKey();
-            List<Integer> endPoints = entry.getValue();
-            FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
-                @Override
-                public void getFieldInfo(Field field, FieldInfo fieldInfo) {
-                    if (fieldInfo.getGroup() == group) {
-                        int startPoint = 1;
-                        for (int endPoint : endPoints) {
-                            if (endPoint - startPoint > 0) {
-                                ExcelSheetUtil.addRegion(sheet, startPoint, endPoint, fieldInfo.getIndex(), fieldInfo.getIndex());
-                            }
-                            startPoint = ++endPoint;
-                        }
-                    }
-                }
-            });
-        }*/
-
         FieldInfoUtil.getEachFieldInfo(fieldInfoMap, new FieldInfoCallback() {
             @Override
             public void getFieldInfo(Field field, FieldInfo fieldInfo) {
@@ -550,7 +531,7 @@ public class ExcelObjectMapper {
                 Cell cell = ExcelCellUtil.getCell(row, fieldInfo.getIndex());
                 Object cellValue = ExcelCellUtil.getCellValue(cell);
                 if (fieldInfo.getName().equals(cellValue) == false)
-                    throw new EOMHeaderException(null); // * THROW WRONG_HEADER_EXCEPTION
+                    throw new EOMHeaderException(sheetName, null); // * THROW WRONG_HEADER_EXCEPTION
             }
         });
     }
@@ -659,7 +640,7 @@ public class ExcelObjectMapper {
                     String fieldType = field.getType().getSimpleName();
                     String cellType = cellValue.getClass().getSimpleName();
                     switch (cellType) {
-                        // [1] string -> number
+                        // [1] number(cell) -> string
                         case StringConstant.INTEGER:
                         case StringConstant.INTEGER_PRIMITIVE:
                         case StringConstant.DOUBLE:
@@ -668,22 +649,26 @@ public class ExcelObjectMapper {
                         case StringConstant.LONG_PRIMITIVE:
                             if (cellValue != null) {
                                 switch (fieldType) {
+                                    // Integer
                                     case StringConstant.INTEGER:
                                     case StringConstant.INTEGER_PRIMITIVE:
                                         break;
+                                    // Double
                                     case StringConstant.DOUBLE:
                                     case StringConstant.DOUBLE_PRIMITIVE:
                                         cellValue = Double.valueOf((Integer) cellValue); // Integer -> Double
                                         break;
+                                    // Long
                                     case StringConstant.LONG:
                                     case StringConstant.LONG_PRIMITIVE:
                                         cellValue = Long.valueOf((Integer) cellValue); // Integer -> Long
                                         break;
-                                    default:
-                                        if(((String) cellValue).equals("")) {
-                                            cellValue = 0;
+                                    // String
+                                    case StringConstant.STRING:
+                                        if(cellValue == null) {
+                                            cellValue = "";
                                         } else {
-                                            cellValue = Integer.parseInt((String) cellValue);
+                                            cellValue = cellValue + "";
                                         }
                                         break;
                                 }
@@ -691,16 +676,28 @@ public class ExcelObjectMapper {
                                 cellValue = 0;
                             }
                             break;
-                        // [2] number -> string
+                        // [2] string(cell) -> number
                         case StringConstant.STRING:
                             if (cellValue != null) {
-                                if (fieldType.equals(StringConstant.INTEGER) == false && fieldType.equals(StringConstant.INTEGER_PRIMITIVE) == false
-                                    &&
-                                    fieldType.equals(StringConstant.DOUBLE) == false && fieldType.equals(StringConstant.DOUBLE_PRIMITIVE) == false
-                                    &&
-                                    fieldType.equals(StringConstant.LONG) == false && fieldType.equals(StringConstant.LONG_PRIMITIVE) == false
-                                ) {
-                                    cellValue = cellValue + "";
+                                switch (fieldType) {
+                                    // Integer
+                                    case StringConstant.INTEGER:
+                                    case StringConstant.INTEGER_PRIMITIVE:
+                                        cellValue = Integer.parseInt((String) cellValue); // String -> Integer
+                                        break;
+                                    // Double
+                                    case StringConstant.DOUBLE:
+                                    case StringConstant.DOUBLE_PRIMITIVE:
+                                        cellValue = Double.parseDouble((String) cellValue); // String -> Double
+                                        break;
+                                    // Long
+                                    case StringConstant.LONG:
+                                    case StringConstant.LONG_PRIMITIVE:
+                                        cellValue = Long.parseLong((String) cellValue); // String -> Long
+                                        break;
+                                    // String
+                                    case StringConstant.STRING:
+                                        break;
                                 }
                             } else {
                                 cellValue = "";
@@ -744,7 +741,7 @@ public class ExcelObjectMapper {
         boolean validateResult = UniqueKeyUtil.validateField(fields, uniqueKeys);
         if (validateResult == false) {
             Map<String, String> args = EOMWrongUniqueFieldException.getArguments(UniqueKeyUtil.getWrongField(fields, uniqueKeys));
-            throw new EOMWrongUniqueFieldException(args);
+            throw new EOMWrongUniqueFieldException(sheetName, args);
         }
 
         // init uniqueKey, minGroup

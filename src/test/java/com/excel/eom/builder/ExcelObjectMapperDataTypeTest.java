@@ -34,6 +34,9 @@ public class ExcelObjectMapperDataTypeTest {
     static String DEPLOY_LONG_TYPE =
             "src/main/resources/deploy/type/deploy_long_type.xlsx";
 
+    static String DEPLOY_WRONG_TYPE =
+            "src/main/resources/deploy/type/deploy_wrong_type.xlsx";
+
     @Data
     @NoArgsConstructor // * must have
     @AllArgsConstructor
@@ -67,10 +70,10 @@ public class ExcelObjectMapperDataTypeTest {
         @ExcelColumn(name = "NAME", index=0, nullable = false)
         public String name;
 
-        @ExcelColumn(name = "COUNT", index=1)
+        @ExcelColumn(name = "LONG_COUNT", index=1)
         public Long count;
 
-        @ExcelColumn(name = "COUNT", index=2)
+        @ExcelColumn(name = "long_COUNT", index=2)
         public long count2;
 
     }
@@ -122,6 +125,21 @@ public class ExcelObjectMapperDataTypeTest {
     @Test
     public void b_buildSheet_long() throws Throwable {
         Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_LONG_TYPE));
+        Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
+        ExcelSheetUtil.print(sheet);
+        List<ExcelObjectLong> items = ExcelObjectMapper.init()
+                .initModel(ExcelObjectLong.class)
+                .initBook(book)
+                .initSheet(sheet)
+                .buildSheet();
+        items.stream().forEach(item -> {
+            System.out.println(item.toString());
+        });
+    }
+
+    @Test
+    public void b_buildSheet_wrong_type() throws Throwable {
+        Workbook book = ExcelFileUtil.getXSSFWorkbookByFile(new File(DEPLOY_WRONG_TYPE));
         Sheet sheet = ExcelSheetUtil.getSheet(book, 0);
         ExcelSheetUtil.print(sheet);
         List<ExcelObjectLong> items = ExcelObjectMapper.init()

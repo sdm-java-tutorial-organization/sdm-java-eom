@@ -9,15 +9,24 @@ import java.util.Map;
 @Getter
 public class EOMRuntimeException extends RuntimeException {
 
-    public Map<String, String> args;
+    private Map<String, String> args;
+
     private int code;
+
     private String message;
+
+    private String sheet;
 
     public EOMRuntimeException(String message, Throwable cause, int code, Map<String, String> args) {
         super(message, cause);
-        this.code = code;
         this.message = message;
+        this.code = code;
         this.args = args;
+    }
+
+    public EOMRuntimeException(String message, Throwable cause, int code, String sheet, Map<String, String> args) {
+        this(message, cause, code, args);
+        this.sheet = sheet;
     }
 
 }
