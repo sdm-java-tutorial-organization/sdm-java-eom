@@ -16,13 +16,9 @@ import com.excel.eom.model.GroupRegionList;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.FieldInfoCallback;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
-import org.apache.poi.xssf.usermodel.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -107,19 +103,20 @@ public class ExcelObjectMapper {
             initFieldInfo(fieldInfoMap);
             presetSheet();
 
-            // [h]eader
+            // Header
             Row hRow = ExcelRowUtil.initRow(this.sheet, 0);
             setHeaderRow(hRow);
 
             if(objects.size() > 0) {
 
+                // object of list validation
                 T t = objects.get(0);
                 if(ReflectionUtil.isSameClass(t.getClass(), this.clazz) == false) {
                     Map<String, String> args = EOMWrongListException.getArguments(t.getClass().getSimpleName(), this.clazz.getSimpleName());
                     throw new EOMWrongListException(args);
                 }
 
-                // [b]ody
+                // Body
                 EOMBodyException bodyException = new EOMBodyException();
                 for (int i = 0; i < objects.size(); i++) {
                     T object = objects.get(i);
@@ -127,20 +124,19 @@ public class ExcelObjectMapper {
                     setBodyRow(bRow, object, bodyException);
                 }
 
-                // [r]egion
+                // Region
                 GroupRegionList groupRegionList = checkRegion(objects);
                 setRegion(groupRegionList);
 
-                // [u]nique
+                // Unique
                 validateUniqueKey(objects, groupRegionList, bodyException);
 
-                // [d]ropdown
+                // Dropdown
                 setDropDown(objects.size());
 
                 if (bodyException.countDetail() > 0) {
                     throw bodyException;
                 }
-
             }
         }
     }
