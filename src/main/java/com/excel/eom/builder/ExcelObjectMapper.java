@@ -16,7 +16,6 @@ import com.excel.eom.model.GroupRegionList;
 import com.excel.eom.util.*;
 import com.excel.eom.util.callback.ExcelColumnInfoCallback;
 import com.excel.eom.util.callback.FieldInfoCallback;
-import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -640,7 +639,7 @@ public class ExcelObjectMapper {
                     String fieldType = field.getType().getSimpleName();
                     String cellType = cellValue.getClass().getSimpleName();
                     switch (cellType) {
-                        // [1] number(cell) -> string
+                        // [1] number(cellType) -> string
                         case StringConstant.INTEGER:
                         case StringConstant.INTEGER_PRIMITIVE:
                         case StringConstant.DOUBLE:
@@ -676,8 +675,8 @@ public class ExcelObjectMapper {
                                 cellValue = 0;
                             }
                             break;
-                        // [2] string(cell) -> number
-                        case StringConstant.STRING:
+                        // [2] string(cellType) -> number
+                        case StringConstant.STRING: // (cellType)
                             if (cellValue != null) {
                                 switch (fieldType) {
                                     // Integer
